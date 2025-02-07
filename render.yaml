@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: yupoo-extractor
+    env: docker
+    buildCommand: docker build -t yupoo-extractor .
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: yupoo-db
+          property: connectionString
+      - key: SECRET_KEY
+        generateValue: true
+
+databases:
+  - name: yupoo-db
+    databaseName: yupoo
+    plan: free

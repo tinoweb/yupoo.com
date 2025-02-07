@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h2>Minhas Extrações</h2>
+    </div>
+    <div class="col text-end">
+        <a href="/" class="btn btn-primary">Nova Extração</a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col">
+        {% if extractions %}
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>URL</th>
+                        <th>Status</th>
+                        <th>Data</th>
+                        <th>Resultado</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for extraction in extractions %}
+                    <tr>
+                        <td>
+                            <a href="{{ extraction.url }}" target="_blank">{{ extraction.url }}</a>
+                        </td>
+                        <td>
+                            {% if extraction.status == 'pending' %}
+                            <span class="badge bg-warning">Pendente</span>
+                            {% elif extraction.status == 'processing' %}
+                            <span class="badge bg-info">Processando</span>
+                            {% elif extraction.status == 'completed' %}
+                            <span class="badge bg-success">Concluído</span>
+                            {% else %}
+                            <span class="badge bg-danger" title="{{ extraction.result_path }}">Erro</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ extraction.created_at.strftime('%d/%m/%Y %H:%M') }}</td>
+                        <td>
+                            {% if extraction.status == 'completed' and extraction.result_path %}
+                            <a href="/extractions/{{ extraction.id }}/view" class="btn btn-sm btn-primary">
+                                Ver Arquivos
+                            </a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="alert alert-info">
+            Você ainda não tem extrações. <a href="/">Criar nova extração</a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
