@@ -1,0 +1,286 @@
+{
+    "project_info": {
+        "name": "Yupoo.com Scraper",
+        "description": "Sistema de extração de dados e imagens do site yupoo.com",
+        "last_update": "2025-02-11T17:12:01-03:00",
+        "status": "corrigindo deploy",
+        "version": "1.0.0",
+        "owner": "tinoweb",
+        "repository": "yupoo.com",
+        "deployment_platform": "Railway"
+    },
+    "architecture": {
+        "core_components": {
+            "main.py": {
+                "purpose": "Core do scraper",
+                "features": [
+                    "Extração de dados via Selenium",
+                    "Download de imagens",
+                    "Gerenciamento de sessão Chrome"
+                ],
+                "key_functions": {
+                    "extract_product_details": "Extrai informações detalhadas do produto",
+                    "download_image": "Realiza download das imagens com headers customizados"
+                }
+            },
+            "geraCSV.py": {
+                "purpose": "Geração de relatórios",
+                "features": ["Conversão de dados para CSV"],
+                "output_format": {
+                    "columns": ["produto", "tamanho", "imagens", "data_extracao"]
+                }
+            },
+            "app/": {
+                "purpose": "Interface web",
+                "components": ["templates/", "static/"],
+                "framework": "Flask",
+                "routes": [
+                    "/": "Página principal",
+                    "/extract": "Endpoint para iniciar extração",
+                    "/results": "Visualização de resultados"
+                ]
+            },
+            "database": {
+                "type": "SQLite",
+                "file": "yupoo_extractor.db",
+                "tables": [
+                    "products",
+                    "images",
+                    "extraction_history"
+                ]
+            }
+        },
+        "dependencies": {
+            "runtime": {
+                "Python": ">=3.8",
+                "Selenium": "latest",
+                "Flask": "latest",
+                "requests": "latest"
+            },
+            "deployment": {
+                "Docker": "Containerização",
+                "Railway": "Cloud deployment",
+                "Render": "Cloud deployment alternativo"
+            }
+        }
+    },
+    "workflow": {
+        "extraction_process": [
+            "1. Input de URL do produto",
+            "2. Inicialização do Chrome/Selenium",
+            "3. Extração de dados do produto",
+            "4. Download de imagens",
+            "5. Organização em pastas",
+            "6. Geração de CSV"
+        ],
+        "error_handling": {
+            "retry_attempts": 3,
+            "timeout": 30,
+            "common_errors": [
+                "Conexão perdida",
+                "Elemento não encontrado",
+                "Timeout de página"
+            ]
+        }
+    },
+    "development_history": {
+        "latest_state": {
+            "features_implemented": [
+                "Extração básica de produtos",
+                "Download de imagens",
+                "Interface web inicial",
+                "Suporte a Docker"
+            ],
+            "pending_improvements": [
+                "Sistema de cache",
+                "Extração em lote",
+                "Melhor tratamento de erros",
+                "Sistema de logs",
+                "Testes automatizados",
+                "Otimização de velocidade"
+            ]
+        }
+    },
+    "technical_notes": {
+        "headers": {
+            "info": "Headers customizados para evitar bloqueios",
+            "last_update": "2025-02-11",
+            "current": {
+                "Referer": "https://alisports.x.yupoo.com/",
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+            }
+        },
+        "best_practices": [
+            "Respeitar limites de requisição",
+            "Manter backups regulares",
+            "Atualizar headers periodicamente"
+        ],
+        "performance_tips": [
+            "Usar wait explícito ao invés de sleep",
+            "Implementar sistema de cache",
+            "Otimizar queries do banco de dados"
+        ]
+    },
+    "deployment": {
+        "platforms": {
+            "Railway": {
+                "config": "railway.toml",
+                "status": "fixing build error",
+                "subscription": "paid ($5 tier)",
+                "deployment_status": {
+                    "state": "updating",
+                    "last_error": "ChromeDriver installation failed",
+                    "fix_applied": "Updated Dockerfile with more robust Chrome/ChromeDriver installation",
+                    "started_at": "2025-02-11T17:12:01-03:00",
+                    "steps_completed": [
+                        "Conta criada no Railway",
+                        "Projeto conectado",
+                        "Identificado erro no build",
+                        "Dockerfile atualizado com correções"
+                    ],
+                    "next_steps": [
+                        "Fazer push das alterações",
+                        "Monitorar novo build",
+                        "Verificar logs após correção"
+                    ]
+                }
+            },
+            "Render": {
+                "config": "render.yaml",
+                "status": "backup platform",
+                "notes": "Configuração mantida como alternativa"
+            }
+        },
+        "docker": {
+            "base_image": "python:3.11-slim",
+            "exposed_ports": [8000],
+            "environment_variables": [
+                "DATABASE_URL",
+                "SECRET_KEY"
+            ],
+            "status": "updating",
+            "last_update": "2025-02-11T17:12:01-03:00",
+            "changes": [
+                "Melhorada instalação do Chrome com gpg",
+                "Script mais robusto para ChromeDriver",
+                "Adicionados logs de debug",
+                "Melhor tratamento de erros"
+            ]
+        },
+        "production_checklist": {
+            "completed": [
+                "Dockerfile configurado",
+                "Dependências atualizadas",
+                "Variáveis de ambiente definidas",
+                "Banco de dados configurado",
+                "Railway.toml configurado com healthcheck",
+                "Conta Railway configurada",
+                "Projeto conectado ao Railway"
+            ],
+            "in_progress": [
+                "Build do projeto no Railway"
+            ],
+            "pending": [
+                "Verificar logs de produção",
+                "Testar aplicação em produção",
+                "Configurar monitoramento"
+            ]
+        }
+    },
+    "development_sessions": {
+        "sessions": [
+            {
+                "date": "2025-02-11T16:41:02-03:00",
+                "developer": "AI Assistant",
+                "changes_made": [
+                    "Criação do arquivo project_memory.json",
+                    "Documentação completa do projeto",
+                    "Estruturação do sistema de memória"
+                ],
+                "next_steps": [
+                    "Implementar sistema de cache",
+                    "Melhorar tratamento de erros",
+                    "Adicionar suporte a extração em lote"
+                ]
+            },
+            {
+                "date": "2025-02-11T16:42:56-03:00",
+                "developer": "AI Assistant",
+                "changes_made": [
+                    "Verificação das configurações de deployment",
+                    "Atualização do status para preparação de produção",
+                    "Revisão do Dockerfile e requirements.txt"
+                ],
+                "next_steps": [
+                    "Realizar deploy na plataforma Render",
+                    "Verificar logs iniciais",
+                    "Configurar monitoramento da aplicação"
+                ]
+            },
+            {
+                "date": "2025-02-11T16:45:35-03:00",
+                "developer": "AI Assistant",
+                "changes_made": [
+                    "Confirmação do Railway como plataforma principal de deploy",
+                    "Atualização da documentação de deployment",
+                    "Verificação das configurações do railway.toml"
+                ],
+                "next_steps": [
+                    "Realizar deploy no Railway",
+                    "Configurar variáveis de ambiente no Railway",
+                    "Testar healthcheck após deploy"
+                ]
+            },
+            {
+                "date": "2025-02-11T17:10:27-03:00",
+                "developer": "AI Assistant",
+                "changes_made": [
+                    "Registro do início do deploy no Railway",
+                    "Atualização do status do projeto para 'em deploy'",
+                    "Documentação do processo de build"
+                ],
+                "next_steps": [
+                    "Monitorar build no Railway",
+                    "Verificar configuração do banco de dados",
+                    "Preparar testes pós-deploy"
+                ],
+                "deployment_notes": [
+                    "Conta Railway ativa com plano pago ($5)",
+                    "Build iniciado com sucesso",
+                    "Aguardando conclusão do processo de deploy"
+                ]
+            },
+            {
+                "date": "2025-02-11T17:12:01-03:00",
+                "developer": "AI Assistant",
+                "changes_made": [
+                    "Correção do erro de build no Railway",
+                    "Atualização do Dockerfile para instalação mais robusta",
+                    "Adição de logs de debug para ChromeDriver"
+                ],
+                "next_steps": [
+                    "Fazer commit das alterações",
+                    "Iniciar novo build no Railway",
+                    "Monitorar logs do novo build"
+                ],
+                "deployment_notes": [
+                    "Erro identificado na instalação do ChromeDriver",
+                    "Implementada solução mais robusta",
+                    "Adicionado melhor tratamento de erros"
+                ]
+            }
+        ]
+    },
+    "user_preferences": {
+        "language": "pt-BR",
+        "notifications": {
+            "on_extraction_complete": true,
+            "on_error": true
+        },
+        "default_settings": {
+            "wait_time": 3,
+            "retry_attempts": 3,
+            "download_path": "./extractions"
+        }
+    }
+}
