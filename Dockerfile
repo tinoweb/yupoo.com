@@ -43,5 +43,5 @@ ENV DATABASE_URL="sqlite:///./yupoo_extractor.db" \
 # Expõe a porta
 EXPOSE 5000
 
-# Comando para iniciar a aplicação
-CMD ["python", "run.py"]
+# Comando para iniciar a aplicação usando o Procfile
+CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-5000}"]
