@@ -2,8 +2,8 @@
     "project_info": {
         "name": "Yupoo.com Scraper",
         "description": "Sistema de extração de dados e imagens do site yupoo.com",
-        "last_update": "2025-02-11T17:12:01-03:00",
-        "status": "corrigindo deploy",
+        "last_update": "2025-02-11T17:17:54-03:00",
+        "status": "corrigindo compatibilidade",
         "version": "1.0.0",
         "owner": "tinoweb",
         "repository": "yupoo.com",
@@ -125,23 +125,24 @@
         "platforms": {
             "Railway": {
                 "config": "railway.toml",
-                "status": "fixing build error",
+                "status": "fixing compatibility",
                 "subscription": "paid ($5 tier)",
                 "deployment_status": {
                     "state": "updating",
-                    "last_error": "ChromeDriver installation failed",
-                    "fix_applied": "Updated Dockerfile with more robust Chrome/ChromeDriver installation",
-                    "started_at": "2025-02-11T17:12:01-03:00",
+                    "current_issue": {
+                        "problem": "Chrome version 133 incompatibility",
+                        "solution": "Fixed Chrome version to 120.0.6099.* for stability",
+                        "details": "Newer Chrome version (133) causing ChromeDriver compatibility issues"
+                    },
                     "steps_completed": [
-                        "Conta criada no Railway",
-                        "Projeto conectado",
-                        "Identificado erro no build",
-                        "Dockerfile atualizado com correções"
+                        "Identificado problema de versão do Chrome",
+                        "Fixada versão específica do Chrome (120)",
+                        "Atualizado Dockerfile"
                     ],
                     "next_steps": [
                         "Fazer push das alterações",
                         "Monitorar novo build",
-                        "Verificar logs após correção"
+                        "Verificar compatibilidade Chrome/ChromeDriver"
                     ]
                 }
             },
@@ -153,18 +154,18 @@
         },
         "docker": {
             "base_image": "python:3.11-slim",
+            "chrome_version": "120.0.6099.*",
             "exposed_ports": [8000],
             "environment_variables": [
                 "DATABASE_URL",
                 "SECRET_KEY"
             ],
             "status": "updating",
-            "last_update": "2025-02-11T17:12:01-03:00",
-            "changes": [
-                "Melhorada instalação do Chrome com gpg",
-                "Script mais robusto para ChromeDriver",
-                "Adicionados logs de debug",
-                "Melhor tratamento de erros"
+            "last_update": "2025-02-11T17:17:54-03:00",
+            "recent_fixes": [
+                "Fixada versão do Chrome para 120.0.6099.*",
+                "Simplificada instalação do ChromeDriver",
+                "Removida detecção dinâmica de versão"
             ]
         },
         "production_checklist": {
@@ -267,6 +268,44 @@
                     "Erro identificado na instalação do ChromeDriver",
                     "Implementada solução mais robusta",
                     "Adicionado melhor tratamento de erros"
+                ]
+            },
+            {
+                "date": "2025-02-11T17:15:59-03:00",
+                "developer": "AI Assistant",
+                "changes_made": [
+                    "Código atualizado enviado ao git",
+                    "Novo build iniciado no Railway",
+                    "Monitoramento do processo de build"
+                ],
+                "next_steps": [
+                    "Aguardar conclusão do build",
+                    "Verificar logs para possíveis erros",
+                    "Preparar testes pós-deploy"
+                ],
+                "deployment_notes": [
+                    "Build em andamento no Railway",
+                    "Utilizando Dockerfile atualizado",
+                    "Aguardando resultado da construção da imagem"
+                ]
+            },
+            {
+                "date": "2025-02-11T17:17:54-03:00",
+                "developer": "AI Assistant",
+                "changes_made": [
+                    "Fixada versão do Chrome para 120.0.6099.*",
+                    "Atualizada configuração do ChromeDriver",
+                    "Simplificado processo de instalação"
+                ],
+                "next_steps": [
+                    "Fazer push das alterações",
+                    "Verificar build com versão fixa do Chrome",
+                    "Testar compatibilidade após deploy"
+                ],
+                "deployment_notes": [
+                    "Chrome 133 causando problemas de compatibilidade",
+                    "Mudança para versão estável 120",
+                    "Simplificação da instalação do ChromeDriver"
                 ]
             }
         ]

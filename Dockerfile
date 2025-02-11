@@ -8,21 +8,18 @@ RUN apt-get update && apt-get install -y \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Adiciona o repositório do Chrome e instala o Chrome
+# Adiciona o repositório do Chrome e instala uma versão específica do Chrome
 RUN wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | gpg --dearmor -o /usr/share/keyrings/google-chrome.gpg \
     && echo "deb [arch=amd64 signed-by=/usr/share/keyrings/google-chrome.gpg] http://dl.google.com/linux/chrome/deb/ stable main" | tee /etc/apt/sources.list.d/google-chrome.list \
     && apt-get update \
-    && apt-get install -y google-chrome-stable \
+    && apt-get install -y google-chrome-stable=120.0.6099.* \
     && rm -rf /var/lib/apt/lists/*
 
-# Instala o ChromeDriver usando script mais robusto
-RUN CHROME_VERSION=$(google-chrome --version | awk '{print $3}') \
-    && CHROME_MAJOR_VERSION=${CHROME_VERSION%%.*} \
-    && echo "Chrome Version: $CHROME_VERSION" \
-    && echo "Chrome Major Version: $CHROME_MAJOR_VERSION" \
-    && wget -q "https://chromedriver.storage.googleapis.com/LATEST_RELEASE_${CHROME_MAJOR_VERSION}" -O - > /tmp/chromedriver_version \
+# Instala o ChromeDriver correspondente à versão 120 do Chrome
+RUN CHROME_MAJOR_VERSION=120 \
+    && wget -q "https://chromedriver.storage.googleapis.com/LATEST_RELEASE_${CHROME_MAJOR_VERSION}" -O /tmp/chromedriver_version \
     && CHROMEDRIVER_VERSION=$(cat /tmp/chromedriver_version) \
-    && echo "ChromeDriver Version: $CHROMEDRIVER_VERSION" \
+    && echo "Installing ChromeDriver version: $CHROMEDRIVER_VERSION" \
     && wget --no-verbose -O /tmp/chromedriver_linux64.zip "https://chromedriver.storage.googleapis.com/${CHROMEDRIVER_VERSION}/chromedriver_linux64.zip" \
     && unzip /tmp/chromedriver_linux64.zip -d /usr/local/bin/ \
     && rm /tmp/chromedriver_linux64.zip /tmp/chromedriver_version \
