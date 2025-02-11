@@ -41,6 +41,3 @@ ENV DATABASE_URL="sqlite:///./yupoo_extractor.db" \
 
 # Expõe a porta
 EXPOSE 8000
-
-# Comando para iniciar a aplicação
-CMD ["python", "start.py"]
