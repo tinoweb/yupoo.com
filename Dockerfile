@@ -28,6 +28,9 @@ WORKDIR /app
 # Copia os arquivos do projeto
 COPY . .
 
+# Torna o script de inicialização executável
+RUN chmod +x start.sh
+
 # Instala as dependências Python
 RUN pip install --no-cache-dir -r requirements.txt
 
@@ -43,4 +46,4 @@ ENV DATABASE_URL="sqlite:///./yupoo_extractor.db" \
 EXPOSE 8000
 
 # Comando para iniciar a aplicação
-CMD uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000} --proxy-headers --forwarded-allow-ips='*'
+CMD ["./start.sh"]
