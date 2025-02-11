@@ -34,8 +34,13 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Cria diretório para as extrações
 RUN mkdir -p extractions
 
+# Variáveis de ambiente padrão
+ENV DATABASE_URL="sqlite:///./yupoo_extractor.db" \
+    SECRET_KEY="your-secret-key-here" \
+    CHROME_BINARY_LOCATION="/usr/bin/google-chrome"
+
 # Expõe a porta
 EXPOSE 8000
 
 # Comando para iniciar a aplicação
-CMD uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}
+CMD uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000} --proxy-headers --forwarded-allow-ips='*'

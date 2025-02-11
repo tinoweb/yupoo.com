@@ -32,6 +32,11 @@ async def get_current_user_from_session(request: Request, db: Session = Depends(
     except:
         return None
 
+# Endpoint de healthcheck
+@app.get("/health")
+async def health_check():
+    return {"status": "healthy"}
+
 @app.get("/", response_class=HTMLResponse)
 async def home(request: Request, user: Optional[models.User] = Depends(get_current_user_from_session)):
     if not user:
