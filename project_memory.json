@@ -2,8 +2,8 @@
     "project_info": {
         "name": "Yupoo.com Scraper",
         "description": "Sistema de extração de dados e imagens do site yupoo.com",
-        "last_update": "2025-02-11T17:17:54-03:00",
-        "status": "corrigindo compatibilidade",
+        "last_update": "2025-02-11T17:21:26-03:00",
+        "status": "building com versão fixa",
         "version": "1.0.0",
         "owner": "tinoweb",
         "repository": "yupoo.com",
@@ -125,24 +125,27 @@
         "platforms": {
             "Railway": {
                 "config": "railway.toml",
-                "status": "fixing compatibility",
+                "status": "building",
                 "subscription": "paid ($5 tier)",
                 "deployment_status": {
-                    "state": "updating",
-                    "current_issue": {
-                        "problem": "Chrome version 133 incompatibility",
-                        "solution": "Fixed Chrome version to 120.0.6099.* for stability",
-                        "details": "Newer Chrome version (133) causing ChromeDriver compatibility issues"
+                    "state": "building",
+                    "current_build": {
+                        "started_at": "2025-02-11T17:21:26-03:00",
+                        "description": "Build com Chrome versão 120",
+                        "changes": [
+                            "Versão fixa do Chrome (120.0.6099.*)",
+                            "ChromeDriver compatível"
+                        ]
                     },
                     "steps_completed": [
-                        "Identificado problema de versão do Chrome",
-                        "Fixada versão específica do Chrome (120)",
-                        "Atualizado Dockerfile"
+                        "Push das alterações realizado",
+                        "Novo build iniciado",
+                        "Usando Chrome versão fixa"
                     ],
                     "next_steps": [
-                        "Fazer push das alterações",
-                        "Monitorar novo build",
-                        "Verificar compatibilidade Chrome/ChromeDriver"
+                        "Monitorar build atual",
+                        "Verificar logs de instalação do Chrome",
+                        "Confirmar versão do ChromeDriver"
                     ]
                 }
             },
@@ -160,12 +163,17 @@
                 "DATABASE_URL",
                 "SECRET_KEY"
             ],
-            "status": "updating",
-            "last_update": "2025-02-11T17:17:54-03:00",
-            "recent_fixes": [
-                "Fixada versão do Chrome para 120.0.6099.*",
-                "Simplificada instalação do ChromeDriver",
-                "Removida detecção dinâmica de versão"
+            "status": "building",
+            "last_update": "2025-02-11T17:21:26-03:00",
+            "build_history": [
+                {
+                    "timestamp": "2025-02-11T17:21:26-03:00",
+                    "event": "Novo build iniciado",
+                    "changes": [
+                        "Chrome versão fixa: 120.0.6099.*",
+                        "ChromeDriver correspondente"
+                    ]
+                }
             ]
         },
         "production_checklist": {
@@ -306,6 +314,25 @@
                     "Chrome 133 causando problemas de compatibilidade",
                     "Mudança para versão estável 120",
                     "Simplificação da instalação do ChromeDriver"
+                ]
+            },
+            {
+                "date": "2025-02-11T17:21:26-03:00",
+                "developer": "AI Assistant",
+                "changes_made": [
+                    "Monitoramento do novo build iniciado",
+                    "Build usando Chrome versão 120",
+                    "Acompanhamento da instalação do ChromeDriver"
+                ],
+                "next_steps": [
+                    "Aguardar conclusão do build",
+                    "Verificar logs de instalação",
+                    "Preparar testes pós-deploy"
+                ],
+                "deployment_notes": [
+                    "Build em andamento com Chrome versão fixa",
+                    "Monitorando processo de instalação",
+                    "Aguardando confirmação de compatibilidade"
                 ]
             }
         ]
