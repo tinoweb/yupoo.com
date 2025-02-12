@@ -37,11 +37,4 @@ RUN mkdir -p extractions
 # Variáveis de ambiente padrão
 ENV DATABASE_URL="sqlite:///./yupoo_extractor.db" \
     SECRET_KEY="your-secret-key-here" \
-    CHROME_BINARY_LOCATION="/usr/bin/google-chrome" \
-    PORT=5000
-
-# Expõe a porta
-EXPOSE 5000
-
-# Comando para iniciar a aplicação usando o Procfile
-CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-5000}"]
+    CHROME_BINARY_LOCATION="/usr/bin/google-chrome"

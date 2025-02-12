@@ -282,3 +282,24 @@ def list_extractions(
         models.Extraction.user_id == current_user.id
     ).all()
     return extractions
+
+@app.get("/root")
+async def root():
+    """
+    Root endpoint for healthcheck
+    """
+    return {"status": "healthy", "message": "Yupoo Extractor API is running"}
+
+if __name__ == "__main__":
+    import uvicorn
+    import os
+    
+    port = int(os.getenv("PORT", "5000"))
+    print(f"Starting server on port {port}")
+    uvicorn.run(
+        "app.main:app",
+        host="0.0.0.0",
+        port=port,
+        proxy_headers=True,
+        forwarded_allow_ips="*"
+    )
