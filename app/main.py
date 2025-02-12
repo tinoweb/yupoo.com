@@ -11,6 +11,8 @@ import os
 import shutil
 import tempfile
 from typing import Optional
+from fastapi.middleware.cors import CORSMiddleware
+from .routes import router
 
 models.Base.metadata.create_all(bind=engine)
 
@@ -300,6 +302,9 @@ async def root():
     Root endpoint for healthcheck
     """
     return {"status": "healthy", "message": "Yupoo Extractor API is running"}
+
+# Inclui as rotas da API
+app.include_router(router)
 
 if __name__ == "__main__":
     import uvicorn
