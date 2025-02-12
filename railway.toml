@@ -3,7 +3,7 @@ builder = "nixpacks"
 buildCommand = "pip install -r requirements.txt"
 
 [deploy]
-startCommand = "hypercorn app.main:app --bind 0.0.0.0:$PORT --workers 4"
+startCommand = "gunicorn -c gunicorn_conf.py app.main:app"
 healthcheckPath = "/"
 healthcheckTimeout = 100
 restartPolicyType = "on_failure"
