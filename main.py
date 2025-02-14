@@ -58,7 +58,7 @@ try:
 
     product_blocks = driver.find_elements(By.CSS_SELECTOR, "div.categories__parent div.categories__children")
     products_info = []
-    for block in product_blocks[:3]:  # Limitando a coleta aos três primeiros produtos
+    for block in product_blocks[:1000]:  # Limitando a coleta aos três primeiros produtos
         link = block.find_element(By.CSS_SELECTOR, "a.album__main").get_attribute('href')
         products_info.append(link)
 
