@@ -40,9 +40,16 @@ async def get_current_user_from_session(request: Request, db: Session = Depends(
     if not token:
         return None
     try:
+        # Remover o prefixo "Bearer " se existir
+        if token.startswith("Bearer "):
+            token = token.replace("Bearer ", "")
+        
+        print(f"Tentando autenticar com token: {token}")  # Debug log
         user = await auth.get_current_user(token, db)
+        print(f"Usuário autenticado: {user.username if user else None}")  # Debug log
         return user
-    except:
+    except Exception as e:
+        print(f"Erro na autenticação: {str(e)}")  # Debug log
         return None
 
 # Endpoint de healthcheck
@@ -71,20 +78,32 @@ async def login(
     db: Session = Depends(get_db)
 ):
     try:
-        # Verificar se o usuário existe
-        user = db.query(models.User).filter(models.User.username == username).first()
+        print(f"Tentativa de login para usuário/email: {username}")  # Debug log
+        
+        # Verificar se o usuário existe (por username ou email)
+        user = db.query(models.User).filter(
+            (models.User.username == username) | (models.User.email == username)
+        ).first()
+        
         if not user:
+            print(f"Usuário/email não encontrado: {username}")  # Debug log
             return templates.TemplateResponse(
                 "login.html",
                 {"request": request, "error": "Usuário não encontrado"}
             )
 
         # Verificar a senha
+        print(f"Verificando senha para usuário: {user.username}")  # Debug log
+        print(f"Hash da senha armazenada: {user.hashed_password}")  # Debug log
+        
         if not auth.verify_password(password, user.hashed_password):
+            print(f"Senha incorreta para usuário: {user.username}")  # Debug log
             return templates.TemplateResponse(
                 "login.html",
                 {"request": request, "error": "Senha incorreta"}
             )
+
+        print(f"Login bem-sucedido para usuário: {user.username}")  # Debug log
 
         # Criar token de acesso
         access_token_expires = timedelta(minutes=auth.ACCESS_TOKEN_EXPIRE_MINUTES)
@@ -92,18 +111,26 @@ async def login(
             data={"sub": user.username}, expires_delta=access_token_expires
         )
 
+        print(f"Token criado para usuário: {user.username}")  # Debug log
+        print(f"Token: {access_token}")  # Debug log
+
         # Configurar resposta com cookie
         response = RedirectResponse(url="/", status_code=status.HTTP_302_FOUND)
         response.set_cookie(
             key="access_token",
-            value=f"Bearer {access_token}",
+            value=access_token,  # Removido o prefixo "Bearer "
             httponly=True,
             max_age=1800,
-            expires=1800
+            expires=1800,
+            samesite="lax",
+            secure=False  # Definido como False para desenvolvimento local
         )
         return response
 
     except Exception as e:
+        print(f"Erro no login: {str(e)}")  # Debug log
+        import traceback
+        print(f"Traceback: {traceback.format_exc()}")  # Debug log completo
         return templates.TemplateResponse(
             "login.html",
             {"request": request, "error": "Erro ao fazer login. Tente novamente."}
@@ -124,13 +151,65 @@ async def register(
     db: Session = Depends(get_db)
 ):
     try:
-        user_data = schemas.UserCreate(email=email, username=username, password=password)
-        create_user(user_data, db)
-        return RedirectResponse(url="/login", status_code=status.HTTP_302_FOUND)
-    except HTTPException as e:
+        print(f"Tentativa de registro para email: {email}, username: {username}")  # Debug log
+        
+        # Validar senha
+        if len(password) < 6:
+            return templates.TemplateResponse(
+                "register.html",
+                {"request": request, "error": "A senha deve ter pelo menos 6 caracteres"}
+            )
+        
+        # Verificar se o email já existe
+        db_user = db.query(models.User).filter(models.User.email == email).first()
+        if db_user:
+            print(f"Email já registrado: {email}")  # Debug log
+            return templates.TemplateResponse(
+                "register.html",
+                {"request": request, "error": "Email já registrado"}
+            )
+        
+        # Verificar se o username já existe
+        db_user = db.query(models.User).filter(models.User.username == username).first()
+        if db_user:
+            print(f"Username já em uso: {username}")  # Debug log
+            return templates.TemplateResponse(
+                "register.html",
+                {"request": request, "error": "Nome de usuário já está em uso"}
+            )
+        
+        # Criar novo usuário
+        try:
+            hashed_password = auth.get_password_hash(password)
+            print(f"Hash gerado para senha: {hashed_password}")  # Debug log
+            
+            db_user = models.User(
+                email=email,
+                username=username,
+                hashed_password=hashed_password
+            )
+            db.add(db_user)
+            db.commit()
+            db.refresh(db_user)
+            
+            print(f"Usuário criado com sucesso: {username}")  # Debug log
+            return RedirectResponse(url="/login", status_code=status.HTTP_302_FOUND)
+            
+        except Exception as e:
+            db.rollback()
+            print(f"Erro ao criar usuário: {str(e)}")  # Debug log
+            return templates.TemplateResponse(
+                "register.html",
+                {"request": request, "error": "Erro ao criar usuário. Tente novamente."}
+            )
+            
+    except Exception as e:
+        print(f"Erro no registro: {str(e)}")  # Debug log
+        import traceback
+        print(f"Traceback: {traceback.format_exc()}")  # Debug log completo
         return templates.TemplateResponse(
             "register.html",
-            {"request": request, "error": e.detail}
+            {"request": request, "error": "Erro ao processar registro. Tente novamente."}
         )
 
 @app.get("/logout")

@@ -20,36 +20,64 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 def verify_password(plain_password, hashed_password):
-    return pwd_context.verify(plain_password, hashed_password)
+    try:
+        return pwd_context.verify(plain_password, hashed_password)
+    except Exception as e:
+        print(f"Erro ao verificar senha: {str(e)}")
+        return False
 
 def get_password_hash(password):
-    return pwd_context.hash(password)
+    try:
+        return pwd_context.hash(password)
+    except Exception as e:
+        print(f"Erro ao gerar hash da senha: {str(e)}")
+        raise
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
-    to_encode = data.copy()
-    if expires_delta:
-        expire = datetime.utcnow() + expires_delta
-    else:
-        expire = datetime.utcnow() + timedelta(minutes=15)
-    to_encode.update({"exp": expire})
-    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
-    return encoded_jwt
+    try:
+        to_encode = data.copy()
+        if expires_delta:
+            expire = datetime.utcnow() + expires_delta
+        else:
+            expire = datetime.utcnow() + timedelta(minutes=15)
+        to_encode.update({"exp": expire})
+        encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+        return encoded_jwt
+    except Exception as e:
+        print(f"Erro ao criar token de acesso: {str(e)}")
+        raise
 
 async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Could not validate credentials",
+        detail="Não foi possível validar as credenciais",
         headers={"WWW-Authenticate": "Bearer"},
     )
     try:
+        # Se o token começar com "Bearer ", remova-o
+        if token.startswith("Bearer "):
+            token = token.replace("Bearer ", "")
+            
+        print(f"Decodificando token: {token}")  # Debug log
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         username: str = payload.get("sub")
         if username is None:
+            print("Token não contém username")  # Debug log
             raise credentials_exception
+            
+        print(f"Username do token: {username}")  # Debug log
         token_data = schemas.TokenData(username=username)
-    except JWTError:
+    except JWTError as e:
+        print(f"Erro ao decodificar token: {str(e)}")  # Debug log
         raise credentials_exception
+    except Exception as e:
+        print(f"Erro inesperado ao validar usuário: {str(e)}")  # Debug log
+        raise credentials_exception
+
     user = db.query(models.User).filter(models.User.username == token_data.username).first()
     if user is None:
+        print(f"Usuário não encontrado: {username}")  # Debug log
         raise credentials_exception
+        
+    print(f"Usuário autenticado: {user.username}")  # Debug log
     return user
