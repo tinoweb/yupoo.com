@@ -70,16 +70,43 @@ async def login(
     password: str = Form(...),
     db: Session = Depends(get_db)
 ):
-    form_data = OAuth2PasswordRequestForm(username=username, password=password, scope="")
     try:
-        token_data = await login_for_access_token(form_data, db)
+        # Verificar se o usuário existe
+        user = db.query(models.User).filter(models.User.username == username).first()
+        if not user:
+            return templates.TemplateResponse(
+                "login.html",
+                {"request": request, "error": "Usuário não encontrado"}
+            )
+
+        # Verificar a senha
+        if not auth.verify_password(password, user.hashed_password):
+            return templates.TemplateResponse(
+                "login.html",
+                {"request": request, "error": "Senha incorreta"}
+            )
+
+        # Criar token de acesso
+        access_token_expires = timedelta(minutes=auth.ACCESS_TOKEN_EXPIRE_MINUTES)
+        access_token = auth.create_access_token(
+            data={"sub": user.username}, expires_delta=access_token_expires
+        )
+
+        # Configurar resposta com cookie
         response = RedirectResponse(url="/", status_code=status.HTTP_302_FOUND)
-        response.set_cookie(key="access_token", value=token_data["access_token"], httponly=True)
+        response.set_cookie(
+            key="access_token",
+            value=f"Bearer {access_token}",
+            httponly=True,
+            max_age=1800,
+            expires=1800
+        )
         return response
-    except HTTPException:
+
+    except Exception as e:
         return templates.TemplateResponse(
             "login.html",
-            {"request": request, "error": "Usuário ou senha inválidos"}
+            {"request": request, "error": "Erro ao fazer login. Tente novamente."}
         )
 
 @app.get("/register", response_class=HTMLResponse)
@@ -255,20 +282,30 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
 
 @app.post("/users/", response_model=schemas.User)
 def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
+    # Verificar email
     db_user = db.query(models.User).filter(models.User.email == user.email).first()
     if db_user:
-        raise HTTPException(status_code=400, detail="Email already registered")
+        raise HTTPException(status_code=400, detail="Email já registrado")
     
-    hashed_password = auth.get_password_hash(user.password)
-    db_user = models.User(
-        email=user.email,
-        username=user.username,
-        hashed_password=hashed_password
-    )
-    db.add(db_user)
-    db.commit()
-    db.refresh(db_user)
-    return db_user
+    # Verificar username
+    db_user = db.query(models.User).filter(models.User.username == user.username).first()
+    if db_user:
+        raise HTTPException(status_code=400, detail="Nome de usuário já está em uso")
+    
+    try:
+        hashed_password = auth.get_password_hash(user.password)
+        db_user = models.User(
+            email=user.email,
+            username=user.username,
+            hashed_password=hashed_password
+        )
+        db.add(db_user)
+        db.commit()
+        db.refresh(db_user)
+        return db_user
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail="Erro ao criar usuário")
 
 @app.post("/extractions/", response_model=schemas.Extraction)
 def create_extraction(
