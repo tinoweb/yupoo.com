@@ -27,6 +27,10 @@ if sys.platform.startswith('win'):
 psycopg2.extensions.register_type(psycopg2.extensions.UNICODE)
 psycopg2.extensions.register_type(psycopg2.extensions.UNICODEARRAY)
 
+# Configurar base para modelos - exportar explicitamente
+Base = declarative_base()
+__all__ = ['Base', 'get_db', 'engine', 'SessionLocal']
+
 def get_database_url():
     """
     Obtém a URL do banco de dados com tratamento de erros.
@@ -35,7 +39,13 @@ def get_database_url():
         str: URL de conexão com o banco de dados
     """
     try:
-        database_url = settings.SQLALCHEMY_DATABASE_URL
+        # Priorizar variáveis de ambiente do Render
+        database_url = os.getenv('DATABASE_URL')
+        
+        if not database_url:
+            # Fallback para configurações locais
+            database_url = settings.SQLALCHEMY_DATABASE_URL
+        
         logger.info(f"Obtendo URL do banco de dados: {database_url}")
         return database_url
     except Exception as e:
@@ -91,7 +101,6 @@ try:
         autoflush=False, 
         bind=engine
     )
-    Base = declarative_base()
     
     def get_db():
         """

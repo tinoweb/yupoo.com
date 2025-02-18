@@ -5,6 +5,11 @@ log() {
     echo "[$(date +'%Y-%m-%d %H:%M:%S')] $*"
 }
 
+# Função de erro
+error() {
+    echo "[ERROR] $*" >&2
+}
+
 # Iniciar Xvfb
 log "Iniciando Xvfb"
 Xvfb :99 -screen 0 1280x1024x24 > /dev/null 2>&1 &
@@ -19,26 +24,36 @@ log "Porta definida como $PORT"
 # Função para extrair informações do banco de dados
 parse_database_url() {
     local db_url="$1"
-    local pattern="postgres://([^:]+):([^@]+)@([^:]+):([^/]+)/(.+)"
     
     log "URL do banco de dados recebida: $db_url"
     
-    if [[ $db_url =~ $pattern ]]; then
-        DB_USER="${BASH_REMATCH[1]}"
-        DB_PASS="${BASH_REMATCH[2]}"
-        DB_HOST="${BASH_REMATCH[3]}"
-        DB_PORT="${BASH_REMATCH[4]}"
-        DB_NAME="${BASH_REMATCH[5]}"
-        
-        echo "Parsed Database URL:"
-        echo "  User: $DB_USER"
-        echo "  Host: $DB_HOST"
-        echo "  Port: $DB_PORT"
-        echo "  Database: $DB_NAME"
-    else
-        log "Erro: Não foi possível parsear a URL do banco de dados"
+    # Usar sed para extrair partes da URL
+    local user=$(echo "$db_url" | sed -E 's|postgres://([^:]+):.*|\1|')
+    local password=$(echo "$db_url" | sed -E 's|postgres://[^:]+:([^@]+).*|\1|')
+    local host=$(echo "$db_url" | sed -E 's|postgres://[^:]+:[^@]+@([^:]+).*|\1|')
+    local port=$(echo "$db_url" | sed -E 's|postgres://[^:]+:[^@]+@[^:]+:([^/]+).*|\1|')
+    local database=$(echo "$db_url" | sed -E 's|postgres://[^:]+:[^@]+@[^:]+:[^/]+/(.+)|\1|')
+    
+    # Validar parâmetros extraídos
+    if [ -z "$user" ] || [ -z "$password" ] || [ -z "$host" ] || [ -z "$port" ] || [ -z "$database" ]; then
+        error "Não foi possível parsear completamente a URL do banco de dados"
         return 1
     fi
+    
+    # Exportar variáveis para uso posterior
+    export POSTGRES_USER="$user"
+    export POSTGRES_PASSWORD="$password"
+    export POSTGRES_HOST="$host"
+    export POSTGRES_PORT="$port"
+    export POSTGRES_DB="$database"
+    
+    log "Parsed Database URL:"
+    log "  User: $POSTGRES_USER"
+    log "  Host: $POSTGRES_HOST"
+    log "  Port: $POSTGRES_PORT"
+    log "  Database: $POSTGRES_DB"
+    
+    return 0
 }
 
 # Função para verificar conexão com PostgreSQL
@@ -49,7 +64,10 @@ check_postgres() {
     local retry_count=0
 
     # Parsear URL do banco de dados
-    parse_database_url "$db_url"
+    if ! parse_database_url "$db_url"; then
+        error "Falha ao parsear URL do banco de dados"
+        return 1
+    fi
 
     log "Iniciando verificação de conexão com PostgreSQL"
     
@@ -57,13 +75,13 @@ check_postgres() {
         log "Tentativa de conexão $((retry_count+1))/$max_retries"
         
         # Verificar se as variáveis foram corretamente definidas
-        if [ -z "$DB_HOST" ] || [ -z "$DB_PORT" ] || [ -z "$DB_USER" ] || [ -z "$DB_NAME" ]; then
-            log "Erro: Variáveis de conexão não definidas corretamente"
+        if [ -z "$POSTGRES_HOST" ] || [ -z "$POSTGRES_PORT" ] || [ -z "$POSTGRES_USER" ] || [ -z "$POSTGRES_DB" ]; then
+            error "Variáveis de conexão não definidas corretamente"
             return 1
         fi
         
         # Tentar conexão usando psql
-        PGPASSWORD="$DB_PASS" psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -c "SELECT 1" > /dev/null 2>&1
+        PGPASSWORD="$POSTGRES_PASSWORD" psql -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "SELECT 1" > /dev/null 2>&1
         
         if [ $? -eq 0 ]; then
             log "Conexão com PostgreSQL estabelecida com sucesso!"
@@ -71,33 +89,34 @@ check_postgres() {
         fi
         
         # Verificar se o host e porta estão corretos
-        nc -z -w5 "$DB_HOST" "$DB_PORT" > /dev/null 2>&1
+        nc -z -w5 "$POSTGRES_HOST" "$POSTGRES_PORT" > /dev/null 2>&1
         if [ $? -ne 0 ]; then
-            log "Erro: Não foi possível conectar ao host $DB_HOST na porta $DB_PORT"
+            log "Erro: Não foi possível conectar ao host $POSTGRES_HOST na porta $POSTGRES_PORT"
         fi
         
         retry_count=$((retry_count+1))
         sleep $retry_interval
     done
 
-    log "Erro: Falha ao conectar ao PostgreSQL após $max_retries tentativas"
+    error "Falha ao conectar ao PostgreSQL após $max_retries tentativas"
     return 1
 }
 
-# Verificar conexão com PostgreSQL
+# Verificar variáveis de ambiente
 log "Variáveis de ambiente para conexão:"
-log "DATABASE_URL: $DATABASE_URL"
-log "POSTGRES_HOST: $POSTGRES_HOST"
-log "POSTGRES_PORT: $POSTGRES_PORT"
-log "POSTGRES_USER: $POSTGRES_USER"
-log "POSTGRES_DB: $POSTGRES_DB"
+log "DATABASE_URL: ${DATABASE_URL:-NÃO DEFINIDA}"
+log "POSTGRES_HOST: ${POSTGRES_HOST:-NÃO DEFINIDA}"
+log "POSTGRES_PORT: ${POSTGRES_PORT:-NÃO DEFINIDA}"
+log "POSTGRES_USER: ${POSTGRES_USER:-NÃO DEFINIDA}"
+log "POSTGRES_DB: ${POSTGRES_DB:-NÃO DEFINIDA}"
 
+# Tentar conexão com PostgreSQL
 if [ -n "$DATABASE_URL" ]; then
     if ! check_postgres "$DATABASE_URL"; then
         log "Continuando inicialização mesmo sem conexão com PostgreSQL"
     fi
 else
-    log "Erro: Variável DATABASE_URL não definida"
+    error "Variável DATABASE_URL não definida"
 fi
 
 # Iniciar a aplicação
