@@ -38,41 +38,33 @@ def configure_driver(headless=True):
     driver.implicitly_wait(10)
     return driver
 
-# def download_image(url, file_path):
-#     """Baixa uma imagem e salva no caminho especificado."""
-#     try:
-#         response = requests.get(url, stream=True)
-#         if response.status_code == 200:
-#             with open(file_path, 'wb') as file:
-#                 for chunk in response.iter_content(1024):
-#                     file.write(chunk)
-#             return True
-#         else:
-#             logger.warning(f"Erro ao baixar imagem: {url} - Status Code: {response.status_code}")
-#             return False
-#     except Exception as e:
-#         logger.error(f"Erro ao baixar imagem {url}: {str(e)}")
-#         return False
-
 def download_image(image_url, save_path):
     """Baixa a imagem para o caminho especificado."""
+    headers = {
+        'Referer': 'https://alisports.x.yupoo.com/',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.212 Safari/537.36'
+    }
     try:
         # Criar diretório pai se não existir
         os.makedirs(os.path.dirname(save_path), exist_ok=True)
         
-        headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.212 Safari/537.36'
-        }
+        # Fazer a requisição com timeout
+        response = requests.get(image_url, headers=headers, timeout=30)
         
-        response = requests.get(image_url, headers=headers, stream=True)
         if response.status_code == 200:
             with open(save_path, 'wb') as f:
-                for chunk in response.iter_content(1024):
-                    f.write(chunk)
+                f.write(response.content)
+            logger.info(f"Imagem baixada com sucesso: {save_path}")
             return True
+        else:
+            logger.warning(f"Erro ao baixar imagem: {image_url} - Status Code: {response.status_code}")
+            return False
+            
+    except requests.Timeout:
+        logger.error(f"Timeout ao baixar imagem: {image_url}")
         return False
     except Exception as e:
-        logger.error(f"Erro ao baixar imagem: {str(e)}")
+        logger.error(f"Erro ao baixar imagem {image_url}: {str(e)}")
         return False
 
 def extract_product_details(url, driver, base_dir):
@@ -97,7 +89,7 @@ def extract_product_details(url, driver, base_dir):
         )
         os.makedirs(product_folder, exist_ok=True)
 
-        # Espera explícita pelas imagens
+        # Espera explícita pelas imagens - usando o seletor correto
         photos = wait.until(
             EC.presence_of_all_elements_located((By.CSS_SELECTOR, "div.showalbum__children.image__main"))
         )
@@ -105,21 +97,32 @@ def extract_product_details(url, driver, base_dir):
         photo_details = []
         for photo in photos:
             try:
+                # Encontra o elemento img dentro do container
                 img_element = photo.find_element(By.CSS_SELECTOR, "img")
                 img_url = img_element.get_attribute('data-origin-src')
                 if not img_url:
                     img_url = img_element.get_attribute('src')
                 img_url = "https:" + img_url if img_url.startswith("//") else img_url
                 
+                # Obtém o título da foto do elemento h3
                 photo_title = photo.find_element(By.CSS_SELECTOR, "h3").get_attribute('title')
                 file_path = os.path.join(product_folder, f"{photo_title.replace(' ', '_').replace(':', '_').replace('/', '_')}.jpg")
 
-                if not os.path.exists(file_path):  # Verifica se o arquivo já existe
+                if not os.path.exists(file_path):
+                    logger.info(f"Baixando imagem: {img_url}")
                     if download_image(img_url, file_path):
-                        photo_details.append({'title': photo_title, 'image_url': img_url, 'file_path': file_path})
+                        photo_details.append({
+                            'title': photo_title,
+                            'image_url': img_url,
+                            'file_path': file_path
+                        })
                 else:
                     logger.info(f"Arquivo já existe: {file_path}")
-                    photo_details.append({'title': photo_title, 'image_url': img_url, 'file_path': file_path})
+                    photo_details.append({
+                        'title': photo_title,
+                        'image_url': img_url,
+                        'file_path': file_path
+                    })
 
             except Exception as e:
                 logger.error(f"Erro ao processar foto: {str(e)}")
