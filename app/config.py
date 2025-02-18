@@ -2,6 +2,7 @@
 import os
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing import Optional, List
+from datetime import timedelta
 
 class Settings(BaseSettings):
     # Configurações do PostgreSQL
@@ -22,6 +23,16 @@ class Settings(BaseSettings):
     # Configurações do Celery
     CELERY_BROKER_URL: Optional[str] = None
     CELERY_RESULT_BACKEND: Optional[str] = None
+    CELERY_TIMEZONE: str = "America/Sao_Paulo"
+    CELERY_TASK_SERIALIZER: str = "json"
+    CELERY_RESULT_SERIALIZER: str = "json"
+    CELERY_ACCEPT_CONTENT: List[str] = ["json"]
+    CELERY_TASK_TRACK_STARTED: bool = True
+    CELERY_TASK_TIME_LIMIT: int = 30 * 60  # 30 minutos
+    CELERY_TASK_SOFT_TIME_LIMIT: int = 25 * 60  # 25 minutos
+    CELERY_WORKER_CONCURRENCY: int = 1  # Para o plano free do Render
+    CELERY_WORKER_MAX_TASKS_PER_CHILD: int = 50
+    CELERY_WORKER_PREFETCH_MULTIPLIER: int = 1
 
     # Configurações do SQLAlchemy
     SQLALCHEMY_DATABASE_URL: Optional[str] = None
@@ -37,7 +48,7 @@ class Settings(BaseSettings):
 
     # Configurações de ambiente
     ENVIRONMENT: str = "production"
-    WORKER_CONCURRENCY: int = 4
+    WORKER_CONCURRENCY: int = 1  # Para o plano free do Render
 
     model_config = SettingsConfigDict(
         case_sensitive=True,
@@ -49,19 +60,21 @@ class Settings(BaseSettings):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         
-        # Configurar URL do banco de dados
-        if not self.SQLALCHEMY_DATABASE_URL:
-            self.SQLALCHEMY_DATABASE_URL = self.DATABASE_URL or f"postgresql://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@{self.POSTGRES_HOST}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
+        # Configurar URLs do banco de dados
+        if self.DATABASE_URL:
+            self.SQLALCHEMY_DATABASE_URL = self.DATABASE_URL
+        else:
+            self.SQLALCHEMY_DATABASE_URL = f"postgresql://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@{self.POSTGRES_HOST}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
+            self.DATABASE_URL = self.SQLALCHEMY_DATABASE_URL
 
         # Configurar URLs do Redis/Celery
-        if not self.REDIS_URL:
-            self.REDIS_URL = f"redis://{self.REDIS_HOST}:{self.REDIS_PORT}/{self.REDIS_DB}"
-        
-        if not self.CELERY_BROKER_URL:
+        if self.REDIS_URL:
             self.CELERY_BROKER_URL = self.REDIS_URL
-            
-        if not self.CELERY_RESULT_BACKEND:
             self.CELERY_RESULT_BACKEND = self.REDIS_URL
+        else:
+            redis_url = f"redis://{':' + self.REDIS_PASSWORD + '@' if self.REDIS_PASSWORD else ''}{self.REDIS_HOST}:{self.REDIS_PORT}/{self.REDIS_DB}"
+            self.CELERY_BROKER_URL = redis_url
+            self.CELERY_RESULT_BACKEND = redis_url
 
 # Configurações de codificação
 os.environ["PYTHONIOENCODING"] = "utf-8"

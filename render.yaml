@@ -8,32 +8,33 @@ services:
     healthCheckTimeout: 100
     plan: free
     autoDeploy: true
+    region: oregon
     envVars:
       - key: PORT
-        value: 8000
+        value: 10000
       - key: DATABASE_URL
         fromDatabase:
-          name: yupoo-db
+          name: yupoo-postgres-db
           property: connectionString
       - key: POSTGRES_HOST
         fromDatabase:
-          name: yupoo-db
+          name: yupoo-postgres-db
           property: host
       - key: POSTGRES_PORT
         fromDatabase:
-          name: yupoo-db
+          name: yupoo-postgres-db
           property: port
       - key: POSTGRES_USER
         fromDatabase:
-          name: yupoo-db
+          name: yupoo-postgres-db
           property: user
       - key: POSTGRES_PASSWORD
         fromDatabase:
-          name: yupoo-db
+          name: yupoo-postgres-db
           property: password
       - key: POSTGRES_DB
         fromDatabase:
-          name: yupoo-db
+          name: yupoo-postgres-db
           property: database
       - key: REDIS_URL
         fromService:
@@ -50,6 +51,10 @@ services:
           name: yupoo-redis
           type: redis
           property: connectionString
+      - key: CELERY_TIMEZONE
+        value: America/Sao_Paulo
+      - key: CELERY_WORKER_CONCURRENCY
+        value: 1
       - key: SECRET_KEY
         generateValue: true
       - key: ENVIRONMENT
@@ -64,30 +69,31 @@ services:
     startCommand: celery -A app.tasks worker --loglevel=info
     plan: free
     autoDeploy: true
+    region: oregon
     envVars:
       - key: DATABASE_URL
         fromDatabase:
-          name: yupoo-db
+          name: yupoo-postgres-db
           property: connectionString
       - key: POSTGRES_HOST
         fromDatabase:
-          name: yupoo-db
+          name: yupoo-postgres-db
           property: host
       - key: POSTGRES_PORT
         fromDatabase:
-          name: yupoo-db
+          name: yupoo-postgres-db
           property: port
       - key: POSTGRES_USER
         fromDatabase:
-          name: yupoo-db
+          name: yupoo-postgres-db
           property: user
       - key: POSTGRES_PASSWORD
         fromDatabase:
-          name: yupoo-db
+          name: yupoo-postgres-db
           property: password
       - key: POSTGRES_DB
         fromDatabase:
-          name: yupoo-db
+          name: yupoo-postgres-db
           property: database
       - key: REDIS_URL
         fromService:
@@ -104,6 +110,10 @@ services:
           name: yupoo-redis
           type: redis
           property: connectionString
+      - key: CELERY_TIMEZONE
+        value: America/Sao_Paulo
+      - key: CELERY_WORKER_CONCURRENCY
+        value: 1
       - key: ENVIRONMENT
         value: production
       - key: DEBUG
@@ -112,10 +122,13 @@ services:
   - type: redis
     name: yupoo-redis
     plan: free
+    region: oregon
     ipAllowList: []
 
 databases:
-  - name: yupoo-db
+  - name: yupoo-postgres-db
     databaseName: yupoo
     plan: free
+    region: oregon
     ipAllowList: []
+    version: "16"
