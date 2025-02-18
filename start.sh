@@ -21,6 +21,8 @@ parse_database_url() {
     local db_url="$1"
     local pattern="postgres://([^:]+):([^@]+)@([^:]+):([^/]+)/(.+)"
     
+    log "URL do banco de dados recebida: $db_url"
+    
     if [[ $db_url =~ $pattern ]]; then
         DB_USER="${BASH_REMATCH[1]}"
         DB_PASS="${BASH_REMATCH[2]}"
@@ -54,6 +56,12 @@ check_postgres() {
     while [ $retry_count -lt $max_retries ]; do
         log "Tentativa de conexão $((retry_count+1))/$max_retries"
         
+        # Verificar se as variáveis foram corretamente definidas
+        if [ -z "$DB_HOST" ] || [ -z "$DB_PORT" ] || [ -z "$DB_USER" ] || [ -z "$DB_NAME" ]; then
+            log "Erro: Variáveis de conexão não definidas corretamente"
+            return 1
+        fi
+        
         # Tentar conexão usando psql
         PGPASSWORD="$DB_PASS" psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -c "SELECT 1" > /dev/null 2>&1
         
@@ -77,8 +85,19 @@ check_postgres() {
 }
 
 # Verificar conexão com PostgreSQL
-if ! check_postgres; then
-    echo "Failed to connect to PostgreSQL. Starting application anyway..."
+log "Variáveis de ambiente para conexão:"
+log "DATABASE_URL: $DATABASE_URL"
+log "POSTGRES_HOST: $POSTGRES_HOST"
+log "POSTGRES_PORT: $POSTGRES_PORT"
+log "POSTGRES_USER: $POSTGRES_USER"
+log "POSTGRES_DB: $POSTGRES_DB"
+
+if [ -n "$DATABASE_URL" ]; then
+    if ! check_postgres "$DATABASE_URL"; then
+        log "Continuando inicialização mesmo sem conexão com PostgreSQL"
+    fi
+else
+    log "Erro: Variável DATABASE_URL não definida"
 fi
 
 # Iniciar a aplicação

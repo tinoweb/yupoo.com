@@ -1,7 +1,9 @@
 # config.py
 import os
+import re
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing import Optional
+from urllib.parse import urlparse, unquote
 
 class Settings(BaseSettings):
     # Configurações do PostgreSQL
@@ -37,25 +39,70 @@ class Settings(BaseSettings):
         extra="allow"
     )
 
+    def _parse_database_url(self, url: str):
+        """
+        Parse a database URL and extract connection parameters.
+        Suporta múltiplos formatos de URL de banco de dados.
+        """
+        try:
+            # Usar urlparse para parsing robusto
+            parsed_url = urlparse(url)
+            
+            # Remover a parte do esquema (postgres://)
+            netloc = parsed_url.netloc
+            
+            # Separar credenciais e host
+            if '@' in netloc:
+                credentials, host_port = netloc.split('@')
+                
+                # Decodificar credenciais
+                user, password = credentials.split(':')
+                user = unquote(user)
+                password = unquote(password)
+                
+                # Separar host e porta
+                if ':' in host_port:
+                    host, port = host_port.split(':')
+                else:
+                    host = host_port
+                    port = '5432'  # Porta padrão PostgreSQL
+                
+                # Remover barra inicial do path para obter nome do banco
+                database = parsed_url.path.lstrip('/')
+                
+                return {
+                    'user': user,
+                    'password': password,
+                    'host': host,
+                    'port': port,
+                    'database': database
+                }
+            
+            # Caso não tenha credenciais
+            return None
+        
+        except Exception as e:
+            print(f"Erro ao parsear URL do banco de dados: {e}")
+            return None
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         
-        # Extrair informações da URL do banco de dados
+        # Tentar parsear a URL do banco de dados
         if self.DATABASE_URL:
-            # Usar expressão regular para extrair partes da URL
-            import re
-            url_pattern = r'postgres://([^:]+):([^@]+)@([^:]+):([^/]+)/(.+)'
-            match = re.match(url_pattern, self.DATABASE_URL)
+            db_params = self._parse_database_url(self.DATABASE_URL)
             
-            if match:
-                self.POSTGRES_USER = match.group(1)
-                self.POSTGRES_PASSWORD = match.group(2)
-                self.POSTGRES_HOST = match.group(3)
-                self.POSTGRES_PORT = match.group(4)
-                self.POSTGRES_DB = match.group(5)
-            
-            # Definir URL do SQLAlchemy
-            self.SQLALCHEMY_DATABASE_URL = self.DATABASE_URL
+            if db_params:
+                self.POSTGRES_USER = db_params['user']
+                self.POSTGRES_PASSWORD = db_params['password']
+                self.POSTGRES_HOST = db_params['host']
+                self.POSTGRES_PORT = db_params['port']
+                self.POSTGRES_DB = db_params['database']
+                
+                # Definir URL do SQLAlchemy
+                self.SQLALCHEMY_DATABASE_URL = self.DATABASE_URL
+            else:
+                print("Erro: Não foi possível parsear a URL do banco de dados")
 
         # Configurar URLs do Redis/Celery
         if self.REDIS_URL:
