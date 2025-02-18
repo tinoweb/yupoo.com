@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 class Settings(BaseSettings):
     # Configurações do PostgreSQL
-    DATABASE_URL: Optional[str] = os.getenv('DATABASE_URL', 'postgresql://postgres:yupoo_tinoweb@localhost:5432/yupoo_db')
+    DATABASE_URL: Optional[str] = os.getenv('DATABASE_URL', 'postgresql://yupoo_postgres_db_user:Aq6AWZd1WGi1KuiuoP5CrBjo1GOALGIm@dpg-cuq9nsa3esus738lvntg-a.oregon-postgres.render.com/yupoo_postgres_db')
     POSTGRES_USER: Optional[str] = None
     POSTGRES_PASSWORD: Optional[str] = None
     POSTGRES_HOST: Optional[str] = None
