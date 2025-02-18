@@ -5,12 +5,12 @@ from typing import Optional
 
 class Settings(BaseSettings):
     # Configurações do PostgreSQL
-    DATABASE_URL: Optional[str] = os.getenv('DATABASE_URL')
-    POSTGRES_USER: str = os.getenv('POSTGRES_USER', 'postgres')
-    POSTGRES_PASSWORD: str = os.getenv('POSTGRES_PASSWORD', 'yupoo_tinoweb')
-    POSTGRES_HOST: str = os.getenv('POSTGRES_HOST', 'localhost')
-    POSTGRES_PORT: str = os.getenv('POSTGRES_PORT', '5432')
-    POSTGRES_DB: str = os.getenv('POSTGRES_DB', 'yupoo_db')
+    DATABASE_URL: Optional[str] = os.getenv('DATABASE_URL', 'postgresql://postgres:yupoo_tinoweb@localhost:5432/yupoo_db')
+    POSTGRES_USER: Optional[str] = None
+    POSTGRES_PASSWORD: Optional[str] = None
+    POSTGRES_HOST: Optional[str] = None
+    POSTGRES_PORT: Optional[str] = None
+    POSTGRES_DB: Optional[str] = None
 
     # Configurações do Redis/Celery
     REDIS_URL: Optional[str] = os.getenv('REDIS_URL')
@@ -40,11 +40,22 @@ class Settings(BaseSettings):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         
-        # Configurar URLs do banco de dados
-        if not self.DATABASE_URL:
-            self.DATABASE_URL = f"postgresql://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@{self.POSTGRES_HOST}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
-        
-        self.SQLALCHEMY_DATABASE_URL = self.DATABASE_URL
+        # Extrair informações da URL do banco de dados
+        if self.DATABASE_URL:
+            # Usar expressão regular para extrair partes da URL
+            import re
+            url_pattern = r'postgres://([^:]+):([^@]+)@([^:]+):([^/]+)/(.+)'
+            match = re.match(url_pattern, self.DATABASE_URL)
+            
+            if match:
+                self.POSTGRES_USER = match.group(1)
+                self.POSTGRES_PASSWORD = match.group(2)
+                self.POSTGRES_HOST = match.group(3)
+                self.POSTGRES_PORT = match.group(4)
+                self.POSTGRES_DB = match.group(5)
+            
+            # Definir URL do SQLAlchemy
+            self.SQLALCHEMY_DATABASE_URL = self.DATABASE_URL
 
         # Configurar URLs do Redis/Celery
         if self.REDIS_URL:
