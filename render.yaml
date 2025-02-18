@@ -66,7 +66,7 @@ services:
     name: yupoo-celery-worker
     env: docker
     buildCommand: docker build -t yupoo-worker .
-    startCommand: celery -A app.tasks worker --loglevel=info
+    startCommand: celery -A app.tasks worker --loglevel=info --concurrency=1 --time-limit=1800 --soft-time-limit=1500 --max-tasks-per-child=50 --prefetch-multiplier=1
     plan: free
     autoDeploy: true
     region: oregon

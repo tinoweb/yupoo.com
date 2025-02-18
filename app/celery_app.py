@@ -1,21 +1,30 @@
 # core/celery.py
 from celery import Celery
 from .config import settings
+import os
 
+# Criar aplicação Celery
 app = Celery('yupoo_extractor')
 
-# Configuração do Celery
-app.conf.update(
-    broker_url=settings.CELERY_BROKER_URL,
-    result_backend=settings.CELERY_RESULT_BACKEND,
-    timezone=settings.CELERY_TIMEZONE,
-    task_serializer=settings.CELERY_TASK_SERIALIZER,
-    result_serializer=settings.CELERY_RESULT_SERIALIZER,
-    accept_content=settings.CELERY_ACCEPT_CONTENT,
-    task_track_started=settings.CELERY_TASK_TRACK_STARTED,
-    task_time_limit=settings.CELERY_TASK_TIME_LIMIT,
-    task_soft_time_limit=settings.CELERY_TASK_SOFT_TIME_LIMIT
-)
+# Configurações básicas do Celery
+celery_config = {
+    'broker_url': settings.CELERY_BROKER_URL or settings.REDIS_URL,
+    'result_backend': settings.CELERY_RESULT_BACKEND or settings.REDIS_URL,
+    'task_serializer': 'json',
+    'result_serializer': 'json',
+    'accept_content': ['json'],
+    'timezone': 'America/Sao_Paulo',
+    'enable_utc': True,
+    'worker_concurrency': 1,
+    'task_track_started': True,
+    'task_time_limit': 1800,  # 30 minutos
+    'task_soft_time_limit': 1500,  # 25 minutos
+    'worker_max_tasks_per_child': 50,
+    'worker_prefetch_multiplier': 1
+}
+
+# Aplicar configurações
+app.conf.update(celery_config)
 
 # Descobrir tarefas automaticamente
 app.autodiscover_tasks(['app.tasks'])
