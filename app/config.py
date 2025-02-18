@@ -5,6 +5,7 @@ from typing import Optional, List
 
 class Settings(BaseSettings):
     # Configurações do PostgreSQL
+    DATABASE_URL: Optional[str] = None
     POSTGRES_USER: str = "postgres"
     POSTGRES_PASSWORD: str = "tinoweb"
     POSTGRES_HOST: str = "localhost"
@@ -12,21 +13,15 @@ class Settings(BaseSettings):
     POSTGRES_DB: str = "yupoo_db"
 
     # Configurações do Redis
+    REDIS_URL: Optional[str] = None
     REDIS_HOST: str = "localhost"
     REDIS_PORT: int = 6379
     REDIS_DB: int = 0
     REDIS_PASSWORD: Optional[str] = None
 
     # Configurações do Celery
-    CELERY_BROKER_URL: str = f"redis://{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}"
-    CELERY_RESULT_BACKEND: str = f"redis://{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB + 1}"
-    CELERY_TIMEZONE: str = "America/Sao_Paulo"
-    CELERY_TASK_SERIALIZER: str = "json"
-    CELERY_RESULT_SERIALIZER: str = "json"
-    CELERY_ACCEPT_CONTENT: List[str] = ["json"]
-    CELERY_TASK_TRACK_STARTED: bool = True
-    CELERY_TASK_TIME_LIMIT: int = 3600  # 1 hora
-    CELERY_TASK_SOFT_TIME_LIMIT: int = 3500
+    CELERY_BROKER_URL: Optional[str] = None
+    CELERY_RESULT_BACKEND: Optional[str] = None
 
     # Configurações do SQLAlchemy
     SQLALCHEMY_DATABASE_URL: Optional[str] = None
@@ -37,10 +32,11 @@ class Settings(BaseSettings):
     # Configurações da aplicação
     APP_NAME: str = "Yupoo Scraper"
     API_PREFIX: str = "/api/v1"
-    DEBUG: bool = True
+    DEBUG: bool = False
+    SECRET_KEY: str = "meu_codigo_secreto_aqui_tinoweb"
 
     # Configurações de ambiente
-    ENVIRONMENT: str = "development"
+    ENVIRONMENT: str = "production"
     WORKER_CONCURRENCY: int = 4
 
     model_config = SettingsConfigDict(
@@ -52,9 +48,20 @@ class Settings(BaseSettings):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        # Configurar URL do banco de dados se não estiver definida
+        
+        # Configurar URL do banco de dados
         if not self.SQLALCHEMY_DATABASE_URL:
-            self.SQLALCHEMY_DATABASE_URL = f"postgresql://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@{self.POSTGRES_HOST}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
+            self.SQLALCHEMY_DATABASE_URL = self.DATABASE_URL or f"postgresql://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@{self.POSTGRES_HOST}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
+
+        # Configurar URLs do Redis/Celery
+        if not self.REDIS_URL:
+            self.REDIS_URL = f"redis://{self.REDIS_HOST}:{self.REDIS_PORT}/{self.REDIS_DB}"
+        
+        if not self.CELERY_BROKER_URL:
+            self.CELERY_BROKER_URL = self.REDIS_URL
+            
+        if not self.CELERY_RESULT_BACKEND:
+            self.CELERY_RESULT_BACKEND = self.REDIS_URL
 
 # Configurações de codificação
 os.environ["PYTHONIOENCODING"] = "utf-8"
