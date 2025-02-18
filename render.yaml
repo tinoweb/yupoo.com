@@ -9,6 +9,26 @@ services:
         fromDatabase:
           name: yupoo-db
           property: connectionString
+      - key: POSTGRES_HOST
+        fromDatabase:
+          name: yupoo-db
+          property: host
+      - key: POSTGRES_PORT
+        fromDatabase:
+          name: yupoo-db
+          property: port
+      - key: POSTGRES_USER
+        fromDatabase:
+          name: yupoo-db
+          property: user
+      - key: POSTGRES_PASSWORD
+        fromDatabase:
+          name: yupoo-db
+          property: password
+      - key: POSTGRES_DB
+        fromDatabase:
+          name: yupoo-db
+          property: database
       - key: REDIS_URL
         fromService:
           name: yupoo-redis
@@ -41,6 +61,26 @@ services:
         fromDatabase:
           name: yupoo-db
           property: connectionString
+      - key: POSTGRES_HOST
+        fromDatabase:
+          name: yupoo-db
+          property: host
+      - key: POSTGRES_PORT
+        fromDatabase:
+          name: yupoo-db
+          property: port
+      - key: POSTGRES_USER
+        fromDatabase:
+          name: yupoo-db
+          property: user
+      - key: POSTGRES_PASSWORD
+        fromDatabase:
+          name: yupoo-db
+          property: password
+      - key: POSTGRES_DB
+        fromDatabase:
+          name: yupoo-db
+          property: database
       - key: REDIS_URL
         fromService:
           name: yupoo-redis
