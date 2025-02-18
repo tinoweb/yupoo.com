@@ -1,9 +1,17 @@
 # config.py
 import os
 import re
+import logging
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing import Optional
 from urllib.parse import urlparse, unquote
+
+# Configurar logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
 class Settings(BaseSettings):
     # Configurações do PostgreSQL
@@ -82,14 +90,17 @@ class Settings(BaseSettings):
             return None
         
         except Exception as e:
-            print(f"Erro ao parsear URL do banco de dados: {e}")
+            logger.error(f"Erro ao parsear URL do banco de dados: {e}")
             return None
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         
+        logger.info(f"Inicializando configurações do ambiente: {self.ENVIRONMENT}")
+        
         # Tentar parsear a URL do banco de dados
         if self.DATABASE_URL:
+            logger.info(f"Parseando URL do banco de dados: {self.DATABASE_URL}")
             db_params = self._parse_database_url(self.DATABASE_URL)
             
             if db_params:
@@ -101,15 +112,25 @@ class Settings(BaseSettings):
                 
                 # Definir URL do SQLAlchemy
                 self.SQLALCHEMY_DATABASE_URL = self.DATABASE_URL
+                
+                logger.info(f"Configurações de banco de dados parseadas com sucesso:")
+                logger.info(f"Host: {self.POSTGRES_HOST}")
+                logger.info(f"Porta: {self.POSTGRES_PORT}")
+                logger.info(f"Banco de dados: {self.POSTGRES_DB}")
             else:
-                print("Erro: Não foi possível parsear a URL do banco de dados")
+                logger.error("Erro: Não foi possível parsear a URL do banco de dados")
 
         # Configurar URLs do Redis/Celery
         if self.REDIS_URL:
+            logger.info(f"Configurando URLs do Redis: {self.REDIS_URL}")
             if not self.CELERY_BROKER_URL:
                 self.CELERY_BROKER_URL = self.REDIS_URL
             if not self.CELERY_RESULT_BACKEND:
                 self.CELERY_RESULT_BACKEND = self.REDIS_URL
+            
+            logger.info("Configurações do Redis/Celery definidas com sucesso")
+
+        logger.info("Inicialização de configurações concluída")
 
 # Configurações de codificação
 os.environ["PYTHONIOENCODING"] = "utf-8"

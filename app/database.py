@@ -1,15 +1,11 @@
-import sys
-import codecs
-import psycopg2
-from sqlalchemy import create_engine
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
-import psycopg2
-import psycopg2.extensions
+import os
 import logging
-from .config import settings
-import time
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker, declarative_base
 from sqlalchemy.exc import SQLAlchemyError, OperationalError
+import time
+
+from .config import settings
 
 # Configurar logging
 logging.basicConfig(
@@ -18,18 +14,8 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Configurar encoding para Windows
-if sys.platform.startswith('win'):
-    sys.stdout = codecs.getwriter('utf-8')(sys.stdout.buffer)
-    sys.stdin = codecs.getreader('utf-8')(sys.stdin.buffer)
-
-# Forçar psycopg2 a usar unicode
-psycopg2.extensions.register_type(psycopg2.extensions.UNICODE)
-psycopg2.extensions.register_type(psycopg2.extensions.UNICODEARRAY)
-
-# Configurar base para modelos - exportar explicitamente
+# Configurar base para modelos
 Base = declarative_base()
-__all__ = ['Base', 'get_db', 'engine', 'SessionLocal']
 
 def get_database_url():
     """
@@ -101,47 +87,26 @@ try:
         autoflush=False, 
         bind=engine
     )
-    
-    def get_db():
-        """
-        Função geradora para obter sessão de banco de dados.
-        
-        Yields:
-            sqlalchemy.orm.Session: Sessão de banco de dados
-        """
-        if SessionLocal is None:
-            raise RuntimeError("Banco de dados não foi inicializado corretamente")
-        
-        db = SessionLocal()
-        try:
-            yield db
-        finally:
-            db.close()
-
-    def create_tables():
-        # Primeiro testa a conexão usando psycopg2
-        try:
-            conn = psycopg2.connect(
-                dbname=settings.POSTGRES_DB,
-                user=settings.POSTGRES_USER,
-                password=settings.POSTGRES_PASSWORD,
-                host=settings.POSTGRES_HOST,
-                port=settings.POSTGRES_PORT
-            )
-            conn.set_client_encoding('UTF8')
-            cur = conn.cursor()
-            cur.execute('SELECT 1')
-            cur.close()
-            conn.close()
-            logger.info("Conexão PostgreSQL testada com sucesso!")
-            
-            # Se a conexão funcionar, cria as tabelas
-            Base.metadata.create_all(bind=engine)
-            logger.info("Tabelas criadas com sucesso!")
-        except Exception as e:
-            logger.error(f"Erro ao conectar/criar tabelas: {e}")
-            raise
 except Exception as e:
     logger.error(f"Erro crítico ao configurar banco de dados: {e}")
     SessionLocal = None
     engine = None
+
+def get_db():
+    """
+    Função geradora para obter sessão de banco de dados.
+    
+    Yields:
+        sqlalchemy.orm.Session: Sessão de banco de dados
+    """
+    if SessionLocal is None:
+        raise RuntimeError("Banco de dados não foi inicializado corretamente")
+    
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+# Exportar símbolos explicitamente
+__all__ = ['Base', 'get_db', 'engine', 'SessionLocal']
