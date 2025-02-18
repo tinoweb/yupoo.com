@@ -99,6 +99,30 @@ def get_extraction_status(extraction_id: int, db: Session = Depends(get_db)):
         "result_path": extraction.result_path
     }
 
+# Health check endpoint
+@router.get("/api/v1/health")
+async def health_check(db: Session = Depends(get_db)):
+    try:
+        # Verificar conexão com o banco de dados
+        db.execute("SELECT 1")
+        
+        # Verificar diretório de uploads
+        uploads_dir = os.path.join(os.getcwd(), "uploads")
+        os.makedirs(uploads_dir, exist_ok=True)
+        
+        return {
+            "status": "healthy",
+            "timestamp": datetime.utcnow().isoformat(),
+            "database": "connected",
+            "uploads_directory": "accessible"
+        }
+    except Exception as e:
+        return {
+            "status": "unhealthy",
+            "timestamp": datetime.utcnow().isoformat(),
+            "error": str(e)
+        }
+
 @router.get("/api/status")
 async def status():
     return {"message": "API is working"}
