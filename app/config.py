@@ -5,17 +5,17 @@ from typing import Optional
 
 class Settings(BaseSettings):
     # Configurações do PostgreSQL
-    DATABASE_URL: Optional[str] = None
-    POSTGRES_USER: str = "postgres"
-    POSTGRES_PASSWORD: str = "tinoweb"
-    POSTGRES_HOST: str = "localhost"
-    POSTGRES_PORT: str = "5432"
-    POSTGRES_DB: str = "yupoo_db"
+    DATABASE_URL: Optional[str] = os.getenv('DATABASE_URL')
+    POSTGRES_USER: str = os.getenv('POSTGRES_USER', 'postgres')
+    POSTGRES_PASSWORD: str = os.getenv('POSTGRES_PASSWORD', 'yupoo_tinoweb')
+    POSTGRES_HOST: str = os.getenv('POSTGRES_HOST', 'localhost')
+    POSTGRES_PORT: str = os.getenv('POSTGRES_PORT', '5432')
+    POSTGRES_DB: str = os.getenv('POSTGRES_DB', 'yupoo_db')
 
     # Configurações do Redis/Celery
-    REDIS_URL: Optional[str] = None
-    CELERY_BROKER_URL: Optional[str] = None
-    CELERY_RESULT_BACKEND: Optional[str] = None
+    REDIS_URL: Optional[str] = os.getenv('REDIS_URL')
+    CELERY_BROKER_URL: Optional[str] = os.getenv('CELERY_BROKER_URL')
+    CELERY_RESULT_BACKEND: Optional[str] = os.getenv('CELERY_RESULT_BACKEND')
 
     # Configurações do SQLAlchemy
     SQLALCHEMY_DATABASE_URL: Optional[str] = None
@@ -26,9 +26,9 @@ class Settings(BaseSettings):
     # Configurações da aplicação
     APP_NAME: str = "Yupoo Scraper"
     API_PREFIX: str = "/api/v1"
-    DEBUG: bool = False
-    SECRET_KEY: str = "meu_codigo_secreto_aqui_tinoweb"
-    ENVIRONMENT: str = "production"
+    DEBUG: bool = os.getenv('DEBUG', 'false').lower() == 'true'
+    SECRET_KEY: str = os.getenv('SECRET_KEY', 'meu_codigo_secreto_aqui_tinoweb')
+    ENVIRONMENT: str = os.getenv('ENVIRONMENT', 'production')
 
     model_config = SettingsConfigDict(
         case_sensitive=True,
@@ -41,11 +41,10 @@ class Settings(BaseSettings):
         super().__init__(**kwargs)
         
         # Configurar URLs do banco de dados
-        if self.DATABASE_URL:
-            self.SQLALCHEMY_DATABASE_URL = self.DATABASE_URL
-        else:
-            self.SQLALCHEMY_DATABASE_URL = f"postgresql://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@{self.POSTGRES_HOST}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
-            self.DATABASE_URL = self.SQLALCHEMY_DATABASE_URL
+        if not self.DATABASE_URL:
+            self.DATABASE_URL = f"postgresql://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@{self.POSTGRES_HOST}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
+        
+        self.SQLALCHEMY_DATABASE_URL = self.DATABASE_URL
 
         # Configurar URLs do Redis/Celery
         if self.REDIS_URL:
