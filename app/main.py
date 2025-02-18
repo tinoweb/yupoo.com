@@ -181,8 +181,16 @@ async def register(
         
         # Criar novo usuário
         try:
-            hashed_password = auth.get_password_hash(password)
-            print(f"Hash gerado para senha: {hashed_password}")
+            try:
+                hashed_password = auth.get_password_hash(password)
+                print(f"Hash gerado para senha: {hashed_password}")
+            except Exception as hash_error:
+                print(f"Erro ao gerar hash de senha: {hash_error}")
+                print(f"Detalhes do erro: {traceback.format_exc()}")
+                return templates.TemplateResponse(
+                    "register.html",
+                    {"request": request, "error": f"Erro ao processar senha: {hash_error}"}
+                )
             
             db_user = models.User(
                 email=email,
