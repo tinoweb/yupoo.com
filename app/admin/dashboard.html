@@ -1,0 +1,98 @@
+{% extends "admin_layout.html" %}
+
+{% block content %}
+<div class="content-wrapper">
+    <!-- Content Header (Page header) -->
+    <section class="content-header">
+        <h1>
+            Dashboard
+            <small>Painel de Controle</small>
+        </h1>
+    </section>
+
+    <!-- Main content -->
+    <section class="content">
+        <!-- Info boxes -->
+        <div class="row">
+            <div class="col-md-6 col-sm-6 col-xs-12">
+                <div class="info-box">
+                    <span class="info-box-icon bg-aqua"><i class="fa fa-users"></i></span>
+                    <div class="info-box-content">
+                        <span class="info-box-text">Total de Usuários</span>
+                        <span class="info-box-number">{{ total_users }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6 col-sm-6 col-xs-12">
+                <div class="info-box">
+                    <span class="info-box-icon bg-green"><i class="fa fa-download"></i></span>
+                    <div class="info-box-content">
+                        <span class="info-box-text">Total de Extrações</span>
+                        <span class="info-box-number">{{ total_extractions }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- /.row -->
+
+        <div class="row">
+            <div class="col-md-12">
+                <div class="box">
+                    <div class="box-header with-border">
+                        <h3 class="box-title">Extrações Recentes</h3>
+                    </div>
+                    <!-- /.box-header -->
+                    <div class="box-body">
+                        <table class="table table-bordered">
+                            <tr>
+                                <th>ID</th>
+                                <th>URL</th>
+                                <th>Usuário</th>
+                                <th>Status</th>
+                                <th>Data</th>
+                            </tr>
+                            {% for extraction in recent_extractions %}
+                            <tr>
+                                <td>{{ extraction.id }}</td>
+                                <td>{{ extraction.url }}</td>
+                                <td>{{ extraction.user.username }}</td>
+                                <td>
+                                    {% if extraction.status == 'completed' %}
+                                    <span class="label label-success">Concluído</span>
+                                    {% elif extraction.status == 'failed' %}
+                                    <span class="label label-danger">Falhou</span>
+                                    {% elif extraction.status == 'processing' %}
+                                    <span class="label label-warning">Processando</span>
+                                    {% else %}
+                                    <span class="label label-default">{{ extraction.status }}</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ extraction.created_at.strftime('%d/%m/%Y %H:%M') }}</td>
+                            </tr>
+                            {% endfor %}
+                        </table>
+                    </div>
+                    <!-- /.box-body -->
+                    <div class="box-footer clearfix">
+                        <a href="/admin/extractions" class="btn btn-sm btn-info btn-flat pull-right">Ver Todas as Extrações</a>
+                    </div>
+                </div>
+                <!-- /.box -->
+            </div>
+        </div>
+    </section>
+    <!-- /.content -->
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+$(document).ready(function() {
+    // Atualizar dados a cada 30 segundos
+    setInterval(function() {
+        location.reload();
+    }, 30000);
+});
+</script>
+{% endblock %}

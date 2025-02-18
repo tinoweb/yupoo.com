@@ -1,0 +1,102 @@
+{% extends "admin_layout.html" %}
+
+{% block content %}
+<div class="content-wrapper">
+    <section class="content-header">
+        <h1>
+            Extrações
+            <small>Gerenciamento de Extrações</small>
+        </h1>
+    </section>
+
+    <section class="content">
+        <div class="box">
+            <div class="box-header with-border">
+                <h3 class="box-title">Lista de Extrações</h3>
+            </div>
+            <div class="box-body">
+                <table class="table table-bordered table-striped">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>URL</th>
+                            <th>Usuário</th>
+                            <th>Status</th>
+                            <th>Data</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for extraction in extractions %}
+                        <tr>
+                            <td>{{ extraction.id }}</td>
+                            <td>{{ extraction.url }}</td>
+                            <td>{{ extraction.user.username }}</td>
+                            <td>
+                                {% if extraction.status == 'completed' %}
+                                <span class="label label-success">Concluído</span>
+                                {% elif extraction.status == 'failed' %}
+                                <span class="label label-danger">Falhou</span>
+                                {% elif extraction.status == 'processing' %}
+                                <span class="label label-warning">Processando</span>
+                                {% else %}
+                                <span class="label label-default">{{ extraction.status }}</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ extraction.created_at.strftime('%d/%m/%Y %H:%M') if extraction.created_at else 'N/A' }}</td>
+                            <td>
+                                <a href="/admin/extractions/{{ extraction.id }}" class="btn btn-xs btn-info">
+                                    <i class="fa fa-eye"></i> Ver
+                                </a>
+                                <button class="btn btn-xs btn-danger delete-extraction" data-id="{{ extraction.id }}">
+                                    <i class="fa fa-trash"></i> Excluir
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <div class="box-footer clearfix">
+                <ul class="pagination pagination-sm no-margin pull-right">
+                    {% if page > 1 %}
+                    <li><a href="?page={{ page - 1 }}">&laquo;</a></li>
+                    {% endif %}
+                    
+                    {% for p in range(1, total_pages + 1) %}
+                    <li {% if p == page %}class="active"{% endif %}>
+                        <a href="?page={{ p }}">{{ p }}</a>
+                    </li>
+                    {% endfor %}
+                    
+                    {% if page < total_pages %}
+                    <li><a href="?page={{ page + 1 }}">&raquo;</a></li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </section>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+$(document).ready(function() {
+    $('.delete-extraction').click(function() {
+        var id = $(this).data('id');
+        if (confirm('Tem certeza que deseja excluir esta extração?')) {
+            $.ajax({
+                url: '/admin/extractions/' + id,
+                type: 'DELETE',
+                success: function(result) {
+                    location.reload();
+                },
+                error: function(xhr, status, error) {
+                    alert('Erro ao excluir extração: ' + error);
+                }
+            });
+        }
+    });
+});
+</script>
+{% endblock %}

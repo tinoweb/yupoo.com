@@ -1,0 +1,35 @@
+tino477@gmail.com
+tinoweb
+tinoweb102
+
+
+
+"postgres" para o usuário postgres
+Mantenha a porta padrão 5432
+Após a instalação, abra o pgAdmin 4 (vem com o PostgreSQL)
+Crie um novo banco de dados chamado "yupoo_db"
+senha tinoweb
+
+--------------------------------------------------------------
+ativar ambiente virtual
+.\venv\Scripts\activate
+
+--------------------------------------------------------------
+Inicie o Celery worker: No novo terminal, navegue até o diretório do seu projeto e execute o seguinte comando:
+.\venv\Scripts\celery -A app.celery_app:celery_app worker --loglevel=info
+
+------------------------------------------------------------------------
+.\venv\Scripts\celery -A app.celery_app:celery_app worker --loglevel=info --pool=solo
+
+--------------------------------------------------------------
+Perfeito! Para iniciar o Uvicorn no ambiente, use o seguinte comando no terminal:
+.\venv\Scripts\uvicorn app.main:app --reload
+
+
+
+
+.\venv\Scripts\celery -A app.celery_app worker --loglevel=info --pool=gevent --concurrency=4
+
+
+https://royal-sports.x.yupoo.com/categories/4604170
+

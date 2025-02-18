@@ -59,6 +59,12 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = De
             token = token.replace("Bearer ", "")
             
         print(f"Decodificando token: {token}")  # Debug log
+        
+        # Verificar se o token está vazio ou é inválido
+        if not token or token.isspace():
+            print("Token vazio ou inválido")
+            raise credentials_exception
+            
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         username: str = payload.get("sub")
         if username is None:
@@ -67,6 +73,18 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = De
             
         print(f"Username do token: {username}")  # Debug log
         token_data = schemas.TokenData(username=username)
+        
+        # Verificar se o token expirou
+        exp = payload.get("exp")
+        if exp is None:
+            print("Token não contém data de expiração")
+            raise credentials_exception
+            
+        # Verificar se o token já expirou
+        if datetime.utcfromtimestamp(exp) < datetime.utcnow():
+            print("Token expirado")
+            raise credentials_exception
+            
     except JWTError as e:
         print(f"Erro ao decodificar token: {str(e)}")  # Debug log
         raise credentials_exception

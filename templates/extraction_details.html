@@ -30,10 +30,14 @@
                                     ({{ (folder.size / 1024 / 1024)|round(2) }} MB)
                                 </small>
                             </div>
-                            <a href="/extractions/{{ extraction.id }}/download/{{ folder.path }}" 
-                               class="btn btn-success">
-                                <i class="fas fa-download"></i> Baixar Pasta
-                            </a>
+                            <div>
+                                <a href="/extractions/{{ extraction.id }}/download/{{ folder.path }}" class="btn btn-success">
+                                    <i class="fas fa-download"></i> Baixar Pasta
+                                </a>
+                                <button onclick="showConfirmationModal('{{ extraction.id }}', '{{ folder.name }}', this)" class="btn btn-danger btn-sm">
+                                    <i class="fas fa-trash"></i> Remover Pasta
+                                </button>
+                            </div>
                         </div>
                         {% endfor %}
                     </div>
@@ -45,4 +49,108 @@
         </div>
     </div>
 </div>
+
+<!-- Modal de Confirmação -->
+<div class="modal fade" id="confirmationModal" tabindex="-1" aria-labelledby="confirmationModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="confirmationModalLabel">Confirmação</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                Tem certeza que deseja remover esta pasta?
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteButton">Remover</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Toast para feedback -->
+<div class="toast-container position-fixed bottom-0 end-0 p-3">
+    <div id="toastMessage" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="toast-header">
+            <strong class="me-auto">Notificação</strong>
+            <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+        <div class="toast-body text-white"></div>
+    </div>
+</div>
+
+<script>
+    // Variáveis globais para armazenar os dados da pasta a ser removida
+    let currentExtractionId = null;
+    let currentFolderName = null;
+    let currentButton = null;
+
+    // Função para exibir o modal de confirmação
+    function showConfirmationModal(extractionId, folderName, button) {
+        currentExtractionId = extractionId;
+        currentFolderName = folderName;
+        currentButton = button;
+
+        const modal = new bootstrap.Modal(document.getElementById('confirmationModal'));
+        modal.show();
+    }
+
+    // Função para remover a pasta após a confirmação
+    document.getElementById('confirmDeleteButton').addEventListener('click', function () {
+        if (currentExtractionId && currentFolderName && currentButton) {
+            // Desabilita o botão e exibe um indicador de carregamento
+            currentButton.disabled = true;
+            currentButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> Removendo...';
+
+            fetch(`/extractions/${currentExtractionId}/remove_folder/${currentFolderName}`, {
+                method: 'DELETE'
+            })
+            .then(response => {
+                if (response.ok) {
+                    showToast("Pasta removida com sucesso!", "success");
+                    // Remove a linha da tabela após a exclusão
+                    currentButton.closest(".list-group-item").remove();
+                } else {
+                    showToast("Erro ao remover a pasta.", "error");
+                }
+            })
+            .catch(error => {
+                console.error("Erro:", error);
+                showToast("Erro ao remover a pasta.", "error");
+            })
+            .finally(() => {
+                // Reabilita o botão e restaura o texto original
+                currentButton.disabled = false;
+                currentButton.innerHTML = '<i class="fas fa-trash"></i> Remover Pasta';
+            });
+
+            // Fecha o modal após a ação
+            const modal = bootstrap.Modal.getInstance(document.getElementById('confirmationModal'));
+            modal.hide();
+        }
+    });
+
+</script>
+
+<script>
+    // Função para exibir mensagens de feedback
+    function showToast(message, type = "success") {
+        const toastEl = document.getElementById("toastMessage");
+        const toastBody = toastEl.querySelector(".toast-body");
+        toastBody.textContent = message;
+
+        // Define a cor do toast com base no tipo (success, error, etc.)
+        toastEl.classList.remove("bg-success", "bg-danger");
+        if (type === "success") {
+            toastEl.classList.add("bg-success");
+        } else if (type === "error") {
+            toastEl.classList.add("bg-danger");
+        }
+
+        // Exibe o toast
+        const toast = new bootstrap.Toast(toastEl);
+        toast.show();
+    }
+</script>
 {% endblock %}

@@ -11,6 +11,7 @@ class User(Base):
     username = Column(String(50), unique=True, index=True)
     hashed_password = Column(String(100))
     is_active = Column(Boolean, default=True)
+    is_admin = Column(Boolean, default=False)  # Novo campo para indicar se é administrador
     created_at = Column(DateTime, default=datetime.utcnow)
     extractions = relationship("Extraction", back_populates="user")
 
@@ -18,10 +19,13 @@ class Extraction(Base):
     __tablename__ = "extractions"
 
     id = Column(Integer, primary_key=True, index=True)
-    url = Column(String(500))
-    status = Column(String(20))  # pending, processing, completed, failed
-    created_at = Column(DateTime, default=datetime.utcnow)
+    url = Column(String)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True)  # Tornando opcional
+    status = Column(String)  # pending, processing, completed, failed
+    created_at = Column(DateTime)
+    started_at = Column(DateTime, nullable=True)
     completed_at = Column(DateTime, nullable=True)
-    result_path = Column(String(500), nullable=True)
-    user_id = Column(Integer, ForeignKey("users.id"))
+    error_message = Column(String, nullable=True)
+    result_path = Column(String, nullable=True)
+
     user = relationship("User", back_populates="extractions")

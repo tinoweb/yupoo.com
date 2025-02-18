@@ -1,0 +1,116 @@
+{% extends "admin_layout.html" %}
+
+{% block content %}
+<div class="content-wrapper">
+    <section class="content-header">
+        <h1>
+            Configurações
+            <small>Configurações do Sistema</small>
+        </h1>
+    </section>
+
+    <section class="content">
+        <div class="row">
+            <div class="col-md-6">
+                <div class="box box-primary">
+                    <div class="box-header with-border">
+                        <h3 class="box-title">Configurações de Extração</h3>
+                    </div>
+                    <form role="form" method="POST">
+                        <div class="box-body">
+                            <div class="form-group">
+                                <label for="extraction_limit">Limite de Extrações por Usuário</label>
+                                <input type="number" class="form-control" id="extraction_limit" name="extraction_limit" 
+                                       placeholder="Ex: 10" value="{{ settings.extraction_limit if settings else '' }}">
+                                <p class="help-block">Número máximo de extrações que um usuário pode fazer por dia</p>
+                            </div>
+                            <div class="form-group">
+                                <label for="concurrent_extractions">Extrações Simultâneas</label>
+                                <input type="number" class="form-control" id="concurrent_extractions" name="concurrent_extractions" 
+                                       placeholder="Ex: 3" value="{{ settings.concurrent_extractions if settings else '' }}">
+                                <p class="help-block">Número máximo de extrações que podem ser executadas simultaneamente</p>
+                            </div>
+                        </div>
+                        <div class="box-footer">
+                            <button type="submit" class="btn btn-primary">Salvar Configurações</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <div class="col-md-6">
+                <div class="box box-info">
+                    <div class="box-header with-border">
+                        <h3 class="box-title">Informações do Sistema</h3>
+                    </div>
+                    <div class="box-body">
+                        <dl class="dl-horizontal">
+                            <dt>Versão do Sistema</dt>
+                            <dd>1.0.0</dd>
+                            
+                            <dt>Status do Servidor</dt>
+                            <dd><span class="label label-success">Online</span></dd>
+                            
+                            <dt>Última Atualização</dt>
+                            <dd>{{ now.strftime('%d/%m/%Y %H:%M') }}</dd>
+                            
+                            <dt>Banco de Dados</dt>
+                            <dd><span class="label label-success">Conectado</span></dd>
+                        </dl>
+                    </div>
+                </div>
+                
+                <div class="box box-warning">
+                    <div class="box-header with-border">
+                        <h3 class="box-title">Manutenção</h3>
+                    </div>
+                    <div class="box-body">
+                        <button class="btn btn-warning btn-block" id="clear-cache">
+                            <i class="fa fa-refresh"></i> Limpar Cache
+                        </button>
+                        <button class="btn btn-danger btn-block" id="clear-extractions">
+                            <i class="fa fa-trash"></i> Limpar Extrações Antigas
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+$(document).ready(function() {
+    $('#clear-cache').click(function() {
+        if (confirm('Tem certeza que deseja limpar o cache do sistema?')) {
+            $.ajax({
+                url: '/admin/settings/clear-cache',
+                type: 'POST',
+                success: function(result) {
+                    alert('Cache limpo com sucesso!');
+                },
+                error: function(xhr, status, error) {
+                    alert('Erro ao limpar cache: ' + error);
+                }
+            });
+        }
+    });
+
+    $('#clear-extractions').click(function() {
+        if (confirm('Tem certeza que deseja limpar as extrações antigas? Esta ação não pode ser desfeita.')) {
+            $.ajax({
+                url: '/admin/settings/clear-extractions',
+                type: 'POST',
+                success: function(result) {
+                    alert('Extrações antigas removidas com sucesso!');
+                },
+                error: function(xhr, status, error) {
+                    alert('Erro ao limpar extrações: ' + error);
+                }
+            });
+        }
+    });
+});
+</script>
+{% endblock %}

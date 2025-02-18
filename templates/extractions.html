@@ -1,63 +1,193 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="row mb-4">
-    <div class="col">
-        <h2>Minhas Extrações</h2>
+<div class="container">
+    <div class="row mb-4">
+        <div class="col">
+            <h2>Minhas Extrações</h2>
+        </div>
+        <div class="col text-end">
+            <a href="/" class="btn btn-primary">Nova Extração</a>
+        </div>
     </div>
-    <div class="col text-end">
-        <a href="/" class="btn btn-primary">Nova Extração</a>
+
+    <div class="row">
+        <div class="col">
+            {% if extractions %}
+            <div class="table-responsive">
+                <table class="table table-striped table-hover align-middle">
+                    <thead class="table-dark">
+                        <tr>
+                            <th scope="col">URL</th>
+                            <th scope="col">Status</th>
+                            <th scope="col">Data</th>
+                            <th scope="col">Resultado</th>
+                            <th scope="col" class="text-center">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for extraction in extractions %}
+                        <tr>
+                            <td>
+                                <a href="{{ extraction.url }}" target="_blank" class="text-decoration-none">
+                                    {{ extraction.url }}
+                                </a>
+                            </td>
+                            <td>
+                                {% if extraction.status == 'pending' %}
+                                <span class="badge bg-warning">Pendente</span>
+                                {% elif extraction.status == 'processing' %}
+                                <span class="badge bg-info">Processando</span>
+                                {% elif extraction.status == 'completed' %}
+                                <span class="badge bg-success">Concluído</span>
+                                {% else %}
+                                <span class="badge bg-danger" title="{{ extraction.result_path }}">Erro</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ extraction.created_at.strftime('%d/%m/%Y %H:%M') if extraction.created_at else 'N/A' }}</td>
+                            <td>
+                                {% if extraction.status == 'completed' and extraction.result_path %}
+                                <a href="/extractions/{{ extraction.id }}/view" class="btn btn-sm btn-primary">
+                                    <i class="fas fa-folder-open"></i> Ver Arquivos
+                                </a>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                <button onclick="showConfirmationModal({{ extraction.id | tojson }}, this)" class="btn btn-danger btn-sm">
+                                    <i class="fas fa-trash"></i> Remover
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Paginação -->
+            <nav aria-label="Navegação de páginas">
+                <ul class="pagination justify-content-center">
+                    <li class="page-item disabled">
+                        <a class="page-link" href="#" tabindex="-1" aria-disabled="true">Anterior</a>
+                    </li>
+                    <li class="page-item active" aria-current="page">
+                        <a class="page-link" href="#">1</a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="#">2</a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="#">3</a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="#">Próxima</a>
+                    </li>
+                </ul>
+            </nav>
+            {% else %}
+            <div class="alert alert-info">
+                Você ainda não tem extrações. <a href="/">Criar nova extração</a>
+            </div>
+            {% endif %}
+        </div>
     </div>
 </div>
 
-<div class="row">
-    <div class="col">
-        {% if extractions %}
-        <div class="table-responsive">
-            <table class="table table-striped">
-                <thead>
-                    <tr>
-                        <th>URL</th>
-                        <th>Status</th>
-                        <th>Data</th>
-                        <th>Resultado</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for extraction in extractions %}
-                    <tr>
-                        <td>
-                            <a href="{{ extraction.url }}" target="_blank">{{ extraction.url }}</a>
-                        </td>
-                        <td>
-                            {% if extraction.status == 'pending' %}
-                            <span class="badge bg-warning">Pendente</span>
-                            {% elif extraction.status == 'processing' %}
-                            <span class="badge bg-info">Processando</span>
-                            {% elif extraction.status == 'completed' %}
-                            <span class="badge bg-success">Concluído</span>
-                            {% else %}
-                            <span class="badge bg-danger" title="{{ extraction.result_path }}">Erro</span>
-                            {% endif %}
-                        </td>
-                        <td>{{ extraction.created_at.strftime('%d/%m/%Y %H:%M') }}</td>
-                        <td>
-                            {% if extraction.status == 'completed' and extraction.result_path %}
-                            <a href="/extractions/{{ extraction.id }}/view" class="btn btn-sm btn-primary">
-                                Ver Arquivos
-                            </a>
-                            {% endif %}
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+<!-- Modal de Confirmação -->
+<div class="modal fade" id="confirmationModal" tabindex="-1" aria-labelledby="confirmationModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="confirmationModalLabel">Confirmação</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                Tem certeza que deseja remover esta extração?
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteButton">Remover</button>
+            </div>
         </div>
-        {% else %}
-        <div class="alert alert-info">
-            Você ainda não tem extrações. <a href="/">Criar nova extração</a>
-        </div>
-        {% endif %}
     </div>
 </div>
+
+<!-- Toast para feedback -->
+<div class="toast-container position-fixed bottom-0 end-0 p-3">
+    <div id="toastMessage" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="toast-header">
+            <strong class="me-auto">Notificação</strong>
+            <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+        <div class="toast-body"></div>
+    </div>
+</div>
+
+<script>
+    // Variáveis globais para armazenar os dados da extração a ser removida
+    let currentExtractionId = null;
+    let currentButton = null;
+
+    // Função para exibir o modal de confirmação
+    function showConfirmationModal(extractionId, button) {
+        currentExtractionId = extractionId;
+        currentButton = button;
+
+        const modal = new bootstrap.Modal(document.getElementById('confirmationModal'));
+        modal.show();
+    }
+
+    // Função para remover a extração após a confirmação
+    document.getElementById('confirmDeleteButton').addEventListener('click', function () {
+        if (currentExtractionId && currentButton) {
+            // Desabilita o botão e exibe um indicador de carregamento
+            currentButton.disabled = true;
+            currentButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> Removendo...';
+
+            fetch(`/extraction/${currentExtractionId}`, {
+                method: 'DELETE'
+            })
+            .then(response => {
+                if (response.ok) {
+                    showToast("Extração removida com sucesso!", "success");
+                    // Remove a linha da tabela após a exclusão
+                    currentButton.closest("tr").remove();
+                } else {
+                    showToast("Erro ao remover a extração.", "error");
+                }
+            })
+            .catch(error => {
+                console.error("Erro:", error);
+                showToast("Erro ao remover a extração.", "error");
+            })
+            .finally(() => {
+                // Reabilita o botão e restaura o texto original
+                currentButton.disabled = false;
+                currentButton.innerHTML = '<i class="fas fa-trash"></i> Remover';
+            });
+
+            // Fecha o modal após a ação
+            const modal = bootstrap.Modal.getInstance(document.getElementById('confirmationModal'));
+            modal.hide();
+        }
+    });
+
+    // Função para exibir mensagens de feedback
+    function showToast(message, type = "success") {
+        const toastEl = document.getElementById("toastMessage");
+        const toastBody = toastEl.querySelector(".toast-body");
+        toastBody.textContent = message;
+
+        // Define a cor do toast com base no tipo (success, error, etc.)
+        toastEl.classList.remove("bg-success", "bg-danger");
+        if (type === "success") {
+            toastEl.classList.add("bg-success");
+        } else if (type === "error") {
+            toastEl.classList.add("bg-danger");
+        }
+
+        // Exibe o toast
+        const toast = new bootstrap.Toast(toastEl);
+        toast.show();
+    }
+</script>
 {% endblock %}

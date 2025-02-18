@@ -13,6 +13,8 @@ import tempfile
 from typing import Optional
 from fastapi.middleware.cors import CORSMiddleware
 from .routes import router
+from .admin_routes import router as admin_router
+from .tasks import extract_yupoo_data
 
 models.Base.metadata.create_all(bind=engine)
 
@@ -78,7 +80,7 @@ async def login(
     db: Session = Depends(get_db)
 ):
     try:
-        print(f"Tentativa de login para usuário/email: {username}")  # Debug log
+        print(f"Tentativa de login para usuário/email: {username}")
         
         # Verificar se o usuário existe (por username ou email)
         user = db.query(models.User).filter(
@@ -86,51 +88,50 @@ async def login(
         ).first()
         
         if not user:
-            print(f"Usuário/email não encontrado: {username}")  # Debug log
+            print(f"Usuário/email não encontrado: {username}")
             return templates.TemplateResponse(
                 "login.html",
-                {"request": request, "error": "Usuário não encontrado"}
+                {"request": request, "error": "Usuário ou senha incorretos"},
+                status_code=401
             )
 
         # Verificar a senha
-        print(f"Verificando senha para usuário: {user.username}")  # Debug log
-        print(f"Hash da senha armazenada: {user.hashed_password}")  # Debug log
-        
+        print(f"Verificando senha para usuário: {user.username}")
         if not auth.verify_password(password, user.hashed_password):
-            print(f"Senha incorreta para usuário: {user.username}")  # Debug log
+            print(f"Senha incorreta para usuário: {user.username}")
             return templates.TemplateResponse(
                 "login.html",
-                {"request": request, "error": "Senha incorreta"}
+                {"request": request, "error": "Usuário ou senha incorretos"},
+                status_code=401
             )
-
-        print(f"Login bem-sucedido para usuário: {user.username}")  # Debug log
 
         # Criar token de acesso
         access_token_expires = timedelta(minutes=auth.ACCESS_TOKEN_EXPIRE_MINUTES)
         access_token = auth.create_access_token(
             data={"sub": user.username}, expires_delta=access_token_expires
         )
-
-        print(f"Token criado para usuário: {user.username}")  # Debug log
-        print(f"Token: {access_token}")  # Debug log
-
-        # Configurar resposta com cookie
+        
+        print(f"Login bem-sucedido para usuário: {user.username}")
+        print(f"Token gerado: {access_token}")
+        
+        # Configurar cookie e redirecionar
         response = RedirectResponse(url="/", status_code=status.HTTP_302_FOUND)
         response.set_cookie(
             key="access_token",
-            value=access_token,  # Removido o prefixo "Bearer "
+            value=access_token,
             httponly=True,
-            max_age=1800,
-            expires=1800,
             samesite="lax",
-            secure=False  # Definido como False para desenvolvimento local
+            secure=False,  # Definido como False para desenvolvimento local
+            max_age=1800  # 30 minutos
         )
+        
+        print("Cookie configurado com sucesso")
         return response
 
     except Exception as e:
-        print(f"Erro no login: {str(e)}")  # Debug log
+        print(f"Erro durante o login: {str(e)}")
         import traceback
-        print(f"Traceback: {traceback.format_exc()}")  # Debug log completo
+        print(f"Traceback: {traceback.format_exc()}")
         return templates.TemplateResponse(
             "login.html",
             {"request": request, "error": "Erro ao fazer login. Tente novamente."}
@@ -151,7 +152,7 @@ async def register(
     db: Session = Depends(get_db)
 ):
     try:
-        print(f"Tentativa de registro para email: {email}, username: {username}")  # Debug log
+        print(f"Tentativa de registro para email: {email}, username: {username}")
         
         # Validar senha
         if len(password) < 6:
@@ -163,7 +164,7 @@ async def register(
         # Verificar se o email já existe
         db_user = db.query(models.User).filter(models.User.email == email).first()
         if db_user:
-            print(f"Email já registrado: {email}")  # Debug log
+            print(f"Email já registrado: {email}")
             return templates.TemplateResponse(
                 "register.html",
                 {"request": request, "error": "Email já registrado"}
@@ -172,7 +173,7 @@ async def register(
         # Verificar se o username já existe
         db_user = db.query(models.User).filter(models.User.username == username).first()
         if db_user:
-            print(f"Username já em uso: {username}")  # Debug log
+            print(f"Username já em uso: {username}")
             return templates.TemplateResponse(
                 "register.html",
                 {"request": request, "error": "Nome de usuário já está em uso"}
@@ -181,7 +182,7 @@ async def register(
         # Criar novo usuário
         try:
             hashed_password = auth.get_password_hash(password)
-            print(f"Hash gerado para senha: {hashed_password}")  # Debug log
+            print(f"Hash gerado para senha: {hashed_password}")
             
             db_user = models.User(
                 email=email,
@@ -192,21 +193,21 @@ async def register(
             db.commit()
             db.refresh(db_user)
             
-            print(f"Usuário criado com sucesso: {username}")  # Debug log
+            print(f"Usuário criado com sucesso: {username}")
             return RedirectResponse(url="/login", status_code=status.HTTP_302_FOUND)
             
         except Exception as e:
             db.rollback()
-            print(f"Erro ao criar usuário: {str(e)}")  # Debug log
+            print(f"Erro ao criar usuário: {str(e)}")
             return templates.TemplateResponse(
                 "register.html",
                 {"request": request, "error": "Erro ao criar usuário. Tente novamente."}
             )
             
     except Exception as e:
-        print(f"Erro no registro: {str(e)}")  # Debug log
+        print(f"Erro no registro: {str(e)}")
         import traceback
-        print(f"Traceback: {traceback.format_exc()}")  # Debug log completo
+        print(f"Traceback: {traceback.format_exc()}")
         return templates.TemplateResponse(
             "register.html",
             {"request": request, "error": "Erro ao processar registro. Tente novamente."}
@@ -256,11 +257,14 @@ async def create_extraction_web(
     db.refresh(extraction)
     
     # Inicia o processo de extração em background
-    try:
-        from . import scraper
-        scraper.process_extraction(extraction, db)
-    except Exception as e:
-        print(f"Erro na extração: {e}")
+    # try:
+    #     from . import scraper
+    #     scraper.process_extraction(extraction, db)
+    # except Exception as e:
+    #     print(f"Erro na extração: {e}")
+
+    # Iniciar tarefa em background
+    extract_yupoo_data.delay(extraction.url, extraction.id)
     
     return RedirectResponse(url="/extractions", status_code=status.HTTP_302_FOUND)
 
@@ -421,6 +425,7 @@ async def root():
 
 # Inclui as rotas da API
 app.include_router(router)
+app.include_router(admin_router)
 
 if __name__ == "__main__":
     import uvicorn
